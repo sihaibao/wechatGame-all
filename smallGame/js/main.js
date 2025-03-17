@@ -102,8 +102,12 @@ export default class Main {
     if (x >= area.startX
       && x <= area.endX
       && y >= area.startY
-      && y <= area.endY)
+      && y <= area.endY) {
       this.restart()
+      
+      // 播放按钮音效
+      this.music.playShoot()
+    }
   }
 
   /**
