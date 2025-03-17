@@ -1,171 +1,283 @@
+import Config from '../config'
+import DataBus from '../databus'
+
 const screenWidth  = window.innerWidth
 const screenHeight = window.innerHeight
 
 let atlas = new Image()
 atlas.src = 'images/Common.png'
 
+// 创建databus实例
+let databus = new DataBus()
+
 export default class GameInfo {
-  renderGameScore(ctx, score, highScore, doubleScoreActive) {
-    ctx.fillStyle = "#ffffff"
-    ctx.font = "16px Arial"
+  constructor() {
+    this.btnArea = {
+      startX: screenWidth / 2 - 40,
+      startY: screenHeight / 2 - 100 + 180,
+      endX  : screenWidth / 2  + 50,
+      endY  : screenHeight / 2 - 100 + 255
+    }
     
-    // 在右上角显示当前分数和最高分，更加紧凑
-    ctx.textAlign = "right"
-    ctx.fillText(
-      '分数: ' + score + (doubleScoreActive ? ' (双倍)' : ''),
-      screenWidth - 10,
-      25
-    )
+    // 成就按钮区域
+    this.achievementBtnArea = {
+      startX: screenWidth / 2 - 40,
+      startY: screenHeight / 2 - 100 + 270,
+      endX  : screenWidth / 2  + 50,
+      endY  : screenHeight / 2 - 100 + 345
+    }
     
-    ctx.font = "14px Arial"
-    ctx.fillText(
-      '最高: ' + highScore,
-      screenWidth - 10,
-      45
-    )
+    // 复活按钮区域
+    this.reviveBtnArea = null
     
-    // 重置文本对齐方式为默认值
-    ctx.textAlign = "left"
+    // 特殊道具按钮区域
+    this.specialItemBtnArea = null
+    
+    // 使用特殊道具按钮区域
+    this.useSpecialItemBtnArea = null
   }
-
+  
+  /**
+   * 渲染游戏分数
+   * @param {Object} ctx Canvas上下文
+   * @param {Number} score 当前分数
+   * @param {Number} highScore 最高分
+   * @param {Boolean} doubleScoreActive 是否激活双倍得分
+   */
+  renderGameScore(ctx, score, highScore, doubleScoreActive = false) {
+    ctx.fillStyle = '#ffffff'
+    ctx.font      = '20px Arial'
+    
+    // 绘制分数
+    ctx.fillText(
+      score,
+      10,
+      30
+    )
+    
+    // 绘制最高分
+    ctx.fillText(
+      `最高分: ${highScore}`,
+      10,
+      60
+    )
+    
+    // 如果激活了双倍得分，显示双倍得分提示
+    if (doubleScoreActive) {
+      ctx.fillStyle = '#ffff00'  // 黄色
+      ctx.fillText(
+        '双倍得分!',
+        10,
+        90
+      )
+    }
+    
+    // 如果启用了关卡系统，显示当前关卡
+    if (Config.levels && Config.levels.enabled) {
+      const currentLevel = databus.getCurrentLevel()
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(
+        `关卡: ${currentLevel.name}`,
+        10,
+        doubleScoreActive ? 120 : 90
+      )
+    }
+    
+    // 渲染关卡提升通知
+    this.renderLevelUpNotification(ctx)
+  }
+  
+  /**
+   * 渲染关卡提升通知
+   * @param {Object} ctx Canvas上下文
+   */
+  renderLevelUpNotification(ctx) {
+    // 检查关卡系统是否启用
+    if (!Config.levels || !Config.levels.enabled) return
+    
+    // 检查是否有关卡提升通知
+    if (!databus.getLevelUpNotification()) return
+    
+    // 通知显示时间为3秒
+    const notificationDuration = 3000
+    const elapsedTime = Date.now() - databus.getLevelUpNotificationTime()
+    
+    if (elapsedTime > notificationDuration) {
+      // 通知显示时间已过，清除通知
+      databus.setLevelUpNotification(null)
+      return
+    }
+    
+    // 计算通知的透明度，实现淡入淡出效果
+    let alpha = 1
+    if (elapsedTime < 500) {
+      // 淡入
+      alpha = elapsedTime / 500
+    } else if (elapsedTime > notificationDuration - 500) {
+      // 淡出
+      alpha = (notificationDuration - elapsedTime) / 500
+    }
+    
+    // 设置文本样式
+    ctx.save()
+    ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`  // 黄色，带透明度
+    ctx.font = 'bold 30px Arial'
+    ctx.textAlign = 'center'
+    
+    // 绘制通知文本
+    ctx.fillText(
+      `升级到 ${databus.getLevelUpNotification()} 难度!`,
+      screenWidth / 2,
+      screenHeight / 3
+    )
+    ctx.restore()
+  }
+  
+  /**
+   * 渲染游戏结束界面
+   * @param {Object} ctx Canvas上下文
+   * @param {Number} score 当前分数
+   * @param {Number} highScore 最高分
+   * @param {Object} adsConfig 广告配置
+   * @param {Object} adManager 广告管理器
+   */
   renderGameOver(ctx, score, highScore, adsConfig, adManager) {
-    ctx.drawImage(atlas, 0, 0, 119, 108, screenWidth / 2 - 150, screenHeight / 2 - 100, 300, 300)
+    ctx.drawImage(atlas, 0, 0, 119, 108, screenWidth / 2 - 60, screenHeight / 2 - 100, 120, 120)
 
-    ctx.fillStyle = "#ffffff"
-    ctx.font = "20px Arial"
-    ctx.textAlign = "center"
+    ctx.fillStyle = '#ffffff'
+    ctx.font    = '20px Arial'
 
     ctx.fillText(
       '游戏结束',
-      screenWidth / 2,
+      screenWidth / 2 - 40,
       screenHeight / 2 - 100 + 50
     )
 
-    // 使用更紧凑的布局显示分数
-    const isNewRecord = score >= highScore
-    
-    ctx.font = "18px Arial"
     ctx.fillText(
-      '得分: ' + score + (isNewRecord ? ' (新纪录!)' : ''),
-      screenWidth / 2,
-      screenHeight / 2 - 100 + 90
+      `得分: ${score}`,
+      screenWidth / 2 - 40,
+      screenHeight / 2 - 100 + 130
     )
     
-    if (!isNewRecord) {
-      ctx.font = "16px Arial"
-      ctx.fillText(
-        '最高分: ' + highScore,
-        screenWidth / 2,
-        screenHeight / 2 - 100 + 120
-      )
-    }
+    ctx.fillText(
+      `最高分: ${highScore}`,
+      screenWidth / 2 - 40,
+      screenHeight / 2 - 100 + 160
+    )
 
-    // 绘制重新开始按钮
     ctx.drawImage(
       atlas,
       120, 6, 39, 24,
       screenWidth / 2 - 60,
-      screenHeight / 2 - 100 + 160,
+      screenHeight / 2 - 100 + 180,
       120, 40
     )
 
-    ctx.font = "16px Arial"
     ctx.fillText(
       '重新开始',
-      screenWidth / 2,
-      screenHeight / 2 - 100 + 185
+      screenWidth / 2 - 40,
+      screenHeight / 2 - 100 + 205
     )
     
-    // 如果广告功能已启用，绘制广告奖励按钮
-    if (adsConfig && adsConfig.enabled) {
-      let buttonY = screenHeight / 2 - 100 + 220
+    // 绘制成就按钮
+    ctx.fillStyle = '#4CAF50'
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 2
+    
+    ctx.beginPath()
+    ctx.roundRect(
+      screenWidth / 2 - 60,
+      screenHeight / 2 - 100 + 270,
+      120, 40,
+      5
+    )
+    ctx.fill()
+    ctx.stroke()
+    
+    ctx.fillStyle = '#ffffff'
+    ctx.fillText(
+      '成就',
+      screenWidth / 2 - 20,
+      screenHeight / 2 - 100 + 295
+    )
+    
+    // 如果启用了广告，绘制广告按钮
+    if (adsConfig) {
+      let buttonY = screenHeight / 2 - 100 + 330
       
-      // 绘制复活按钮（如果启用且未达到最大复活次数）
-      if (adsConfig.revive.enabled && adManager.revivesUsed < adsConfig.revive.maxRevivesPerGame) {
-        this.renderAdButton(ctx, '看广告复活', screenWidth / 2, buttonY, 'revive')
-        buttonY += 50
+      // 绘制复活按钮
+      if (adsConfig.revive.enabled && adManager.canShowReviveAd()) {
+        this.renderAdButton(
+          ctx,
+          '复活',
+          buttonY,
+          '#ff9800'
+        )
+        
+        // 保存复活按钮区域
+        this.reviveBtnArea = {
+          startX: screenWidth / 2 - 60,
+          startY: buttonY,
+          endX: screenWidth / 2 + 60,
+          endY: buttonY + 40
+        }
+        
+        buttonY += 60
+      } else {
+        this.reviveBtnArea = null
       }
       
-      // 绘制双倍得分按钮（如果启用）
-      if (adsConfig.doubleScore.enabled) {
-        this.renderAdButton(ctx, '下局双倍得分', screenWidth / 2, buttonY, 'doubleScore')
-        buttonY += 50
+      // 绘制特殊道具按钮
+      if (adsConfig.specialItem.enabled && adManager.canShowSpecialItemAd()) {
+        this.renderAdButton(
+          ctx,
+          '特殊道具',
+          buttonY,
+          '#2196F3'
+        )
+        
+        // 保存特殊道具按钮区域
+        this.specialItemBtnArea = {
+          startX: screenWidth / 2 - 60,
+          startY: buttonY,
+          endX: screenWidth / 2 + 60,
+          endY: buttonY + 40
+        }
+      } else {
+        this.specialItemBtnArea = null
       }
-      
-      // 绘制特殊道具按钮（如果启用且不在冷却中）
-      if (adsConfig.specialItem.enabled && adManager.specialItemCooldown <= 0) {
-        this.renderAdButton(ctx, '获取特殊道具', screenWidth / 2, buttonY, 'specialItem')
-      }
-    }
-
-    // 重置文本对齐方式为默认值
-    ctx.textAlign = "left"
-
-    /**
-     * 重新开始按钮区域
-     * 方便简易判断按钮点击
-     */
-    this.btnArea = {
-      startX: screenWidth / 2 - 60,
-      startY: screenHeight / 2 - 100 + 160,
-      endX  : screenWidth / 2 + 60,
-      endY  : screenHeight / 2 - 100 + 200
     }
   }
   
   /**
    * 渲染广告按钮
    * @param {Object} ctx Canvas上下文
-   * @param {String} text 按钮文字
-   * @param {Number} x 按钮中心x坐标
-   * @param {Number} y 按钮中心y坐标
-   * @param {String} type 按钮类型
+   * @param {String} text 按钮文本
+   * @param {Number} y 按钮Y坐标
+   * @param {String} color 按钮颜色
    */
-  renderAdButton(ctx, text, x, y, type) {
-    const buttonWidth = 140
-    const buttonHeight = 40
-    
-    // 绘制按钮背景
-    ctx.fillStyle = '#4CAF50'  // 绿色
+  renderAdButton(ctx, text, y, color) {
+    ctx.fillStyle = color
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
     
-    // 圆角矩形
     ctx.beginPath()
-    ctx.roundRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, 8)
+    ctx.roundRect(
+      screenWidth / 2 - 60,
+      y,
+      120, 40,
+      5
+    )
     ctx.fill()
     ctx.stroke()
     
-    // 绘制按钮文字
     ctx.fillStyle = '#ffffff'
-    ctx.font = '16px Arial'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(text, x, y)
-    
-    // 保存按钮区域
-    if (type === 'revive') {
-      this.reviveBtnArea = {
-        startX: x - buttonWidth / 2,
-        startY: y - buttonHeight / 2,
-        endX: x + buttonWidth / 2,
-        endY: y + buttonHeight / 2
-      }
-    } else if (type === 'doubleScore') {
-      this.doubleScoreBtnArea = {
-        startX: x - buttonWidth / 2,
-        startY: y - buttonHeight / 2,
-        endX: x + buttonWidth / 2,
-        endY: y + buttonHeight / 2
-      }
-    } else if (type === 'specialItem') {
-      this.specialItemBtnArea = {
-        startX: x - buttonWidth / 2,
-        startY: y - buttonHeight / 2,
-        endX: x + buttonWidth / 2,
-        endY: y + buttonHeight / 2
-      }
-    }
+    ctx.font = '20px Arial'
+    ctx.fillText(
+      text,
+      screenWidth / 2 - text.length * 10,
+      y + 25
+    )
   }
   
   /**
@@ -173,35 +285,40 @@ export default class GameInfo {
    * @param {Object} ctx Canvas上下文
    */
   renderSpecialItemButton(ctx) {
-    const buttonSize = 60
-    const x = 40
-    const y = screenHeight - 40
+    const buttonWidth = 60
+    const buttonHeight = 60
+    const buttonX = screenWidth - buttonWidth - 20
+    const buttonY = screenHeight - buttonHeight - 20
     
     // 绘制按钮背景
-    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'  // 半透明红色
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
     
-    // 圆形按钮
     ctx.beginPath()
-    ctx.arc(x, y, buttonSize / 2, 0, Math.PI * 2)
+    ctx.arc(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2, buttonWidth / 2, 0, 2 * Math.PI)
     ctx.fill()
     ctx.stroke()
     
-    // 绘制按钮文字
-    ctx.fillStyle = '#ffffff'
-    ctx.font = '14px Arial'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('使用', x, y - 8)
-    ctx.fillText('道具', x, y + 8)
+    // 绘制按钮图标（简单的炸弹图标）
+    ctx.fillStyle = '#ff0000'
+    ctx.beginPath()
+    ctx.arc(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2 - 10, 10, 0, 2 * Math.PI)
+    ctx.fill()
+    
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2)
+    ctx.lineTo(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2 + 15)
+    ctx.stroke()
     
     // 保存按钮区域
     this.useSpecialItemBtnArea = {
-      startX: x - buttonSize / 2,
-      startY: y - buttonSize / 2,
-      endX: x + buttonSize / 2,
-      endY: y + buttonSize / 2
+      startX: buttonX,
+      startY: buttonY,
+      endX: buttonX + buttonWidth,
+      endY: buttonY + buttonHeight
     }
   }
 }
