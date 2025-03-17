@@ -27,6 +27,7 @@ export default class DataBus {
     this.bullets    = []
     this.enemys     = []
     this.animations = []
+    this.powerItems = []  
     this.gameOver   = false
   }
 
@@ -80,5 +81,19 @@ export default class DataBus {
     temp.visible = false
 
     this.pool.recover('bullet', bullet)
+  }
+
+  /**
+   * 回收道具，进入对象池
+   * 此后不进入帧循环
+   */
+  removePowerItem(powerItem) {
+    const index = this.powerItems.findIndex((item) => item === powerItem)
+    
+    if (index !== -1) {
+      const temp = this.powerItems.splice(index, 1)[0]
+      temp.visible = false
+      this.pool.recover(powerItem.type, powerItem)
+    }
   }
 }

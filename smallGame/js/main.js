@@ -4,6 +4,10 @@ import BackGround from './runtime/background'
 import GameInfo from './runtime/gameinfo'
 import Music from './runtime/music'
 import DataBus from './databus'
+// 导入道具类
+import Weapon from './power/weapon'
+import Shield from './power/shield'
+import Bomb from './power/bomb'
 
 let ctx = canvas.getContext('2d')
 let databus = new DataBus()
@@ -56,6 +60,32 @@ export default class Main {
     }
   }
 
+  /**
+   * 随着帧数变化的道具生成逻辑
+   * 帧数取模定义成生成的频率
+   */
+  powerItemGenerate() {
+    // 每隔300帧（约5秒）生成一个道具
+    if (databus.frame % 300 === 0) {
+      // 随机决定生成哪种道具
+      const random = Math.random()
+      let powerItem
+      
+      if (random < 0.5) {
+        // 50%概率生成武器升级
+        powerItem = databus.pool.getItemByClass('weapon', Weapon)
+      } else if (random < 0.8) {
+        // 30%概率生成护盾
+        powerItem = databus.pool.getItemByClass('shield', Shield)
+      } else {
+        // 20%概率生成炸弹
+        powerItem = databus.pool.getItemByClass('bomb', Bomb)
+      }
+      
+      databus.powerItems.push(powerItem)
+    }
+  }
+
   // 全局碰撞检测
   collisionDetection() {
     let that = this
@@ -75,6 +105,26 @@ export default class Main {
         }
       }
     })
+
+    // 道具与玩家的碰撞检测
+    for (let i = 0; i < databus.powerItems.length; i++) {
+      let powerItem = databus.powerItems[i]
+      
+      if (powerItem.isCollideWith(this.player)) {
+        // 播放获得道具的音效
+        that.music.playShoot()
+        
+        // 应用道具效果
+        this.player.applyPowerItem(powerItem)
+        
+        // 设置道具为不可见
+        powerItem.visible = false
+        
+        // 从数组中移除道具
+        databus.powerItems.splice(i, 1)
+        i--
+      }
+    }
 
     for (let i = 0, il = databus.enemys.length; i < il; i++) {
       let enemy = databus.enemys[i]
@@ -119,6 +169,11 @@ export default class Main {
 
     this.bg.render(ctx)
 
+    // 绘制道具
+    databus.powerItems.forEach((item) => {
+      item.drawToCanvas(ctx)
+    })
+
     databus.bullets
       .concat(databus.enemys)
       .forEach((item) => {
@@ -156,13 +211,25 @@ export default class Main {
 
     this.bg.update()
 
+    // 更新道具位置
+    databus.powerItems.forEach((item) => {
+      item.update()
+    })
+
+    // 移除屏幕外的道具
+    databus.powerItems = databus.powerItems.filter((item) => item.visible)
+
     databus.bullets
       .concat(databus.enemys)
       .forEach((item) => {
         item.update()
       })
 
+    // 更新玩家道具状态
+    this.player.updatePowerStatus()
+
     this.enemyGenerate()
+    this.powerItemGenerate()
 
     this.collisionDetection()
 
