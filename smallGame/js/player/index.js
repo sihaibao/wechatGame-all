@@ -7,8 +7,8 @@ const screenHeight   = window.innerHeight
 
 // 玩家相关常量设置
 const PLAYER_IMG_SRC = 'images/hero.png'
-const PLAYER_WIDTH   = 80
-const PLAYER_HEIGHT  = 80
+const PLAYER_WIDTH   = 72   // 432/6 让飞机更小
+const PLAYER_HEIGHT  = 43   // 256/6 让飞机更小
 
 let databus = new DataBus()
 
