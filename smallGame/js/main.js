@@ -81,6 +81,9 @@ export default class Main {
 
       if (this.player.isCollideWith(enemy)) {
         databus.gameOver = true
+        
+        // 游戏结束时保存最高分
+        databus.saveHighScore()
 
         break
       }
@@ -126,11 +129,13 @@ export default class Main {
       }
     })
 
-    this.gameinfo.renderGameScore(ctx, databus.score)
+    // 传入最高分数据
+    this.gameinfo.renderGameScore(ctx, databus.score, databus.highScore)
 
     // 游戏结束停止帧循环
     if (databus.gameOver) {
-      this.gameinfo.renderGameOver(ctx, databus.score)
+      // 传入最高分数据
+      this.gameinfo.renderGameOver(ctx, databus.score, databus.highScore)
 
       if (!this.hasEventBind) {
         this.hasEventBind = true

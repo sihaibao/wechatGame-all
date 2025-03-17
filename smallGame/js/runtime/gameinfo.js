@@ -5,18 +5,26 @@ let atlas = new Image()
 atlas.src = 'images/Common.png'
 
 export default class GameInfo {
-  renderGameScore(ctx, score) {
+  renderGameScore(ctx, score, highScore) {
     ctx.fillStyle = "#ffffff"
     ctx.font      = "20px Arial"
 
+    // 显示当前分数
     ctx.fillText(
-      score,
+      '分数: ' + score,
       10,
       30
     )
+
+    // 显示最高分
+    ctx.fillText(
+      '最高分: ' + highScore,
+      10,
+      60
+    )
   }
 
-  renderGameOver(ctx, score) {
+  renderGameOver(ctx, score, highScore) {
     ctx.drawImage(atlas, 0, 0, 119, 108, screenWidth / 2 - 150, screenHeight / 2 - 100, 300, 300)
 
     ctx.fillStyle = "#ffffff"
@@ -30,6 +38,13 @@ export default class GameInfo {
 
     ctx.fillText(
       '得分: ' + score,
+      screenWidth / 2 - 40,
+      screenHeight / 2 - 100 + 100
+    )
+    
+    // 显示最高分
+    ctx.fillText(
+      '最高分: ' + highScore,
       screenWidth / 2 - 40,
       screenHeight / 2 - 100 + 130
     )
@@ -60,4 +75,3 @@ export default class GameInfo {
     }
   }
 }
-
