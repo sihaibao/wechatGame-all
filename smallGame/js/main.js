@@ -8,6 +8,11 @@ import DataBus from './databus'
 import Weapon from './power/weapon'
 import Shield from './power/shield'
 import Bomb from './power/bomb'
+import SuperBomb from './power/superBomb'
+// 导入广告管理器
+import AdManager from './runtime/adManager'
+// 导入配置
+import Config from './config'
 
 let ctx = canvas.getContext('2d')
 let databus = new DataBus()
@@ -20,11 +25,17 @@ export default class Main {
     // 维护当前requestAnimationFrame的id
     this.aniId = 0
 
+    // 初始化广告管理器
+    this.adManager = new AdManager()
+
     this.restart()
   }
 
   restart() {
     databus.reset()
+    
+    // 重置广告管理器状态
+    this.adManager.reset()
 
     canvas.removeEventListener(
       'touchstart',
@@ -99,7 +110,14 @@ export default class Main {
           that.music.playExplosion()
 
           bullet.visible = false
-          databus.score += 1
+          
+          // 使用新的加分方法，考虑广告奖励的得分倍率
+          const pointsGained = databus.addScore(1)
+          
+          // 如果有双倍得分，显示特效
+          if (pointsGained > 1) {
+            // 这里可以添加双倍得分的特效
+          }
 
           break
         }
@@ -158,6 +176,160 @@ export default class Main {
       // 播放按钮音效
       this.music.playShoot()
     }
+    
+    // 检查是否点击了复活按钮
+    if (databus.gameOver && this.gameinfo.reviveBtnArea) {
+      if (x >= this.gameinfo.reviveBtnArea.startX
+        && x <= this.gameinfo.reviveBtnArea.endX
+        && y >= this.gameinfo.reviveBtnArea.startY
+        && y <= this.gameinfo.reviveBtnArea.endY) {
+        
+        // 显示复活广告
+        this.showReviveAd()
+      }
+    }
+    
+    // 检查是否点击了特殊道具按钮
+    if (databus.gameOver && this.gameinfo.specialItemBtnArea) {
+      if (x >= this.gameinfo.specialItemBtnArea.startX
+        && x <= this.gameinfo.specialItemBtnArea.endX
+        && y >= this.gameinfo.specialItemBtnArea.startY
+        && y <= this.gameinfo.specialItemBtnArea.endY) {
+        
+        // 显示特殊道具广告
+        this.showSpecialItemAd()
+      }
+    }
+    
+    // 检查是否点击了双倍得分按钮
+    if (databus.gameOver && this.gameinfo.doubleScoreBtnArea) {
+      if (x >= this.gameinfo.doubleScoreBtnArea.startX
+        && x <= this.gameinfo.doubleScoreBtnArea.endX
+        && y >= this.gameinfo.doubleScoreBtnArea.startY
+        && y <= this.gameinfo.doubleScoreBtnArea.endY) {
+        
+        // 显示双倍得分广告
+        this.showDoubleScoreAd()
+      }
+    }
+    
+    // 检查是否点击了特殊道具使用按钮
+    if (!databus.gameOver && databus.specialItem && this.gameinfo.useSpecialItemBtnArea) {
+      if (x >= this.gameinfo.useSpecialItemBtnArea.startX
+        && x <= this.gameinfo.useSpecialItemBtnArea.endX
+        && y >= this.gameinfo.useSpecialItemBtnArea.startY
+        && y <= this.gameinfo.useSpecialItemBtnArea.endY) {
+        
+        // 使用特殊道具
+        this.useSpecialItem()
+      }
+    }
+  }
+
+  /**
+   * 显示复活广告
+   */
+  showReviveAd() {
+    if (!Config.ads.enabled || !Config.ads.revive.enabled) {
+      return
+    }
+    
+    this.adManager.showReviveAd(
+      // 成功回调
+      () => {
+        // 复活玩家
+        databus.gameOver = false
+        
+        // 清除屏幕上的所有敌机
+        databus.enemys = []
+        
+        // 给予短暂的无敌时间
+        this.player.hasShield = true
+        this.player.shieldTime = 180 // 3秒无敌
+        
+        // 移除事件监听
+        this.hasEventBind = false
+        canvas.removeEventListener('touchstart', this.touchHandler)
+      },
+      // 失败回调
+      (reason) => {
+        console.log('复活失败:', reason)
+        // 可以显示提示信息
+      }
+    )
+  }
+  
+  /**
+   * 显示双倍得分广告
+   */
+  showDoubleScoreAd() {
+    if (!Config.ads.enabled || !Config.ads.doubleScore.enabled) {
+      return
+    }
+    
+    this.adManager.showDoubleScoreAd(
+      // 成功回调
+      () => {
+        // 激活双倍得分
+        databus.adRewardActive = true
+        
+        // 重新开始游戏
+        this.restart()
+      },
+      // 失败回调
+      (reason) => {
+        console.log('双倍得分激活失败:', reason)
+        // 可以显示提示信息
+      }
+    )
+  }
+  
+  /**
+   * 显示特殊道具广告
+   */
+  showSpecialItemAd() {
+    if (!Config.ads.enabled || !Config.ads.specialItem.enabled) {
+      return
+    }
+    
+    this.adManager.showSpecialItemAd(
+      // 成功回调
+      () => {
+        // 创建特殊道具
+        let superBomb = databus.pool.getItemByClass('superBomb', SuperBomb)
+        superBomb.init()
+        
+        // 设置特殊道具
+        databus.setSpecialItem(superBomb)
+        
+        // 重新开始游戏
+        this.restart()
+      },
+      // 失败回调
+      (reason) => {
+        console.log('特殊道具获取失败:', reason)
+        // 可以显示提示信息
+      }
+    )
+  }
+  
+  /**
+   * 使用特殊道具
+   */
+  useSpecialItem() {
+    if (!databus.specialItem) {
+      return
+    }
+    
+    // 使用特殊道具
+    const result = databus.useSpecialItem()
+    
+    if (result) {
+      // 播放特效
+      this.music.playExplosion()
+      
+      // 可以添加更多特效
+    }
   }
 
   /**
@@ -188,19 +360,27 @@ export default class Main {
       }
     })
 
-    // 传入最高分数据
-    this.gameinfo.renderGameScore(ctx, databus.score, databus.highScore)
+    // 绘制特殊道具（如果有）
+    if (databus.specialItem) {
+      databus.specialItem.drawToCanvas(ctx)
+    }
+
+    // 传入广告奖励状态
+    this.gameinfo.renderGameScore(ctx, databus.score, databus.highScore, databus.adRewardActive)
 
     // 游戏结束停止帧循环
     if (databus.gameOver) {
-      // 传入最高分数据
-      this.gameinfo.renderGameOver(ctx, databus.score, databus.highScore)
+      // 传入广告配置和管理器
+      this.gameinfo.renderGameOver(ctx, databus.score, databus.highScore, Config.ads, this.adManager)
 
       if (!this.hasEventBind) {
         this.hasEventBind = true
         this.touchHandler = this.touchEventHandler.bind(this)
         canvas.addEventListener('touchstart', this.touchHandler)
       }
+    } else if (databus.specialItem) {
+      // 如果有特殊道具，绘制使用按钮
+      this.gameinfo.renderSpecialItemButton(ctx)
     }
   }
 
@@ -210,6 +390,9 @@ export default class Main {
       return;
 
     this.bg.update()
+
+    // 更新广告管理器状态
+    this.adManager.update()
 
     // 更新道具位置
     databus.powerItems.forEach((item) => {
@@ -227,6 +410,11 @@ export default class Main {
 
     // 更新玩家道具状态
     this.player.updatePowerStatus()
+    
+    // 更新特殊道具状态
+    if (databus.specialItem) {
+      databus.specialItem.update()
+    }
 
     this.enemyGenerate()
     this.powerItemGenerate()

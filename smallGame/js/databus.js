@@ -1,4 +1,5 @@
 import Pool from './base/pool'
+import Config from './config'
 
 let instance
 
@@ -29,6 +30,10 @@ export default class DataBus {
     this.animations = []
     this.powerItems = []  
     this.gameOver   = false
+    
+    // 广告奖励相关状态
+    this.adRewardActive = false  // 是否有广告奖励激活
+    this.specialItem = null      // 特殊道具
   }
 
   /**
@@ -95,5 +100,43 @@ export default class DataBus {
       temp.visible = false
       this.pool.recover(powerItem.type, powerItem)
     }
+  }
+  
+  /**
+   * 加分方法，考虑广告奖励的得分倍率
+   * @param {Number} points 基础得分
+   * @returns {Number} 实际得分
+   */
+  addScore(points) {
+    // 检查是否开启了广告功能
+    if (Config.ads.enabled && this.adRewardActive) {
+      // 如果有双倍得分奖励，分数翻倍
+      points *= 2
+    }
+    
+    this.score += points
+    return points
+  }
+  
+  /**
+   * 设置特殊道具
+   * @param {Object} item 特殊道具对象
+   */
+  setSpecialItem(item) {
+    this.specialItem = item
+  }
+  
+  /**
+   * 使用特殊道具
+   * @returns {Object} 道具使用结果
+   */
+  useSpecialItem() {
+    if (!this.specialItem) {
+      return null
+    }
+    
+    const result = this.specialItem.use()
+    this.specialItem = null
+    return result
   }
 }
