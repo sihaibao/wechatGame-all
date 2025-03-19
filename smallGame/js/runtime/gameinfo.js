@@ -243,7 +243,7 @@ export default class GameInfo {
       const elementsOpacity = (easeOutProgress - 0.5) * 2 // 从0.5到1映射为0到1
       
       // 绘制游戏结束标题背景
-      ctx.fillStyle = `rgba(0, 0, 0, ${0.7 * elementsOpacity})`
+      ctx.fillStyle = `rgba(50, 0, 0, ${0.8 * elementsOpacity})`  // 深红色背景
       this.drawRoundRect(
         ctx,
         screenWidth / 2 - 80,
@@ -253,15 +253,47 @@ export default class GameInfo {
       )
       ctx.fill()
       
+      // 添加游戏结束标题边框效果
+      ctx.strokeStyle = `rgba(255, 50, 50, ${0.9 * elementsOpacity})`  // 红色边框
+      ctx.lineWidth = 3
+      ctx.stroke()
+      
+      // 添加发光效果
+      ctx.shadowColor = `rgba(255, 0, 0, ${0.8 * elementsOpacity})`  // 更鲜艳的红色光晕
+      ctx.shadowBlur = 12
+      ctx.stroke()
+      ctx.shadowBlur = 0
+      
       // 绘制游戏结束文字
-      ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
-      ctx.font = 'bold 24px Arial'
+      ctx.fillStyle = `rgba(255, 50, 50, ${elementsOpacity})`  // 改为红色
+      ctx.font = 'bold 28px Arial'  // 进一步增大字体
       ctx.textAlign = 'center'
+      
+      // 添加文字阴影效果
+      ctx.shadowColor = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`  // 白色阴影
+      ctx.shadowBlur = 6
+      ctx.shadowOffsetX = 1
+      ctx.shadowOffsetY = 1
+      
       ctx.fillText(
         '游戏结束',
         screenWidth / 2,
         screenHeight / 2 - 145
       )
+      
+      // 添加文字描边效果
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.8 * elementsOpacity})`;
+      ctx.lineWidth = 1;
+      ctx.strokeText(
+        '游戏结束',
+        screenWidth / 2,
+        screenHeight / 2 - 145
+      );
+      
+      // 重置阴影效果
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetX = 0
+      ctx.shadowOffsetY = 0
   
       // 绘制分数背景
       ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * elementsOpacity})`
