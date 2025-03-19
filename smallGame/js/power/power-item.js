@@ -47,12 +47,24 @@ export default class PowerItem extends Sprite {
     if (!this.visible || !player.visible)
       return false
 
-    const spX = this.x + this.width / 2
-    const spY = this.y + this.height / 2
-    const plX = player.x + player.width / 2
-    const plY = player.y + player.height / 2
+    // 获取道具的碰撞区域
+    const itemLeft = this.x
+    const itemRight = this.x + this.width
+    const itemTop = this.y
+    const itemBottom = this.y + this.height
 
-    return !!(Math.abs(spX - plX) < this.width / 2 + player.width / 2 &&
-             Math.abs(spY - plY) < this.height / 2 + player.height / 2)
+    // 获取玩家的碰撞区域
+    const playerLeft = player.x
+    const playerRight = player.x + player.width
+    const playerTop = player.y
+    const playerBottom = player.y + player.height
+
+    // 矩形碰撞检测
+    return !(
+      itemRight < playerLeft ||
+      itemLeft > playerRight ||
+      itemBottom < playerTop ||
+      itemTop > playerBottom
+    )
   }
 }

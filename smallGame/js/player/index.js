@@ -207,20 +207,39 @@ export default class Player extends Sprite {
    * 如果有护盾，则不会碰撞
    */
   isCollideWith(sp) {
+    // 如果有护盾，不会碰撞
     if (this.hasShield) {
       return false
     }
     
-    let spX = sp.x + sp.width / 2
-    let spY = sp.y + sp.height / 2
-
-    if ( !this.visible || !sp.visible )
+    // 如果敌机正在播放爆炸动画，不会碰撞
+    if (sp.isPlaying) {
       return false
+    }
 
-    return !!(   spX >= this.x
-              && spX <= this.x + this.width
-              && spY >= this.y
-              && spY <= this.y + this.height  )
+    // 获取玩家飞机的碰撞区域（缩小30%以提高游戏体验）
+    const playerLeft = this.x + this.width * 0.15
+    const playerRight = this.x + this.width * 0.85
+    const playerTop = this.y + this.height * 0.15
+    const playerBottom = this.y + this.height * 0.85
+
+    // 获取敌机的碰撞区域（缩小20%）
+    const enemyLeft = sp.x + sp.width * 0.1
+    const enemyRight = sp.x + sp.width * 0.9
+    const enemyTop = sp.y + sp.height * 0.1
+    const enemyBottom = sp.y + sp.height * 0.9
+
+    if (!this.visible || !sp.visible) {
+      return false
+    }
+
+    // 矩形碰撞检测
+    return !(
+      playerRight < enemyLeft ||
+      playerLeft > enemyRight ||
+      playerBottom < enemyTop ||
+      playerTop > enemyBottom
+    )
   }
 
   /**
