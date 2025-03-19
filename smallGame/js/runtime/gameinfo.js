@@ -39,6 +39,11 @@ export default class GameInfo {
     
     // 使用特殊道具按钮区域
     this.useSpecialItemBtnArea = null
+    
+    // 游戏结束动画效果
+    this.gameOverAnimationStartTime = 0
+    this.gameOverAnimationDuration = 1000 // 1秒动画
+    this.gameOverAnimationActive = false
   }
   
   /**
@@ -148,8 +153,23 @@ export default class GameInfo {
    * @param {Object} adManager 广告管理器
    */
   renderGameOver(ctx, score, highScore, adsConfig, adManager) {
+    // 初始化动画效果
+    if (!this.gameOverAnimationActive) {
+      this.gameOverAnimationStartTime = Date.now()
+      this.gameOverAnimationActive = true
+    }
+    
+    // 计算动画进度 (0-1)
+    const animationProgress = Math.min(
+      (Date.now() - this.gameOverAnimationStartTime) / this.gameOverAnimationDuration, 
+      1
+    )
+    
+    // 使用缓动函数使动画更平滑
+    const easeOutProgress = 1 - Math.pow(1 - animationProgress, 3)
+    
     // 绘制半透明背景，覆盖整个屏幕
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * easeOutProgress})`
     ctx.fillRect(0, 0, screenWidth, screenHeight)
     
     // 绘制背景图片
@@ -157,26 +177,32 @@ export default class GameInfo {
       // 计算背景图片的绘制区域，使其居中且适当缩放
       const bgWidth = 350
       const bgHeight = 450
-      const bgX = screenWidth / 2 - bgWidth / 2
-      const bgY = screenHeight / 2 - bgHeight / 2
+      
+      // 应用动画效果 - 从小到大的缩放效果
+      const animatedScale = 0.7 + (0.3 * easeOutProgress)
+      const scaledWidth = bgWidth * animatedScale
+      const scaledHeight = bgHeight * animatedScale
+      
+      const bgX = screenWidth / 2 - scaledWidth / 2
+      const bgY = screenHeight / 2 - scaledHeight / 2
       
       // 绘制背景图片
       ctx.drawImage(
         gameOverBg,
         bgX,
         bgY,
-        bgWidth,
-        bgHeight
+        scaledWidth,
+        scaledHeight
       )
       
       // 添加半透明遮罩，使文字更清晰
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * easeOutProgress})`
       this.drawRoundRect(
         ctx,
         bgX,
         bgY,
-        bgWidth,
-        bgHeight,
+        scaledWidth,
+        scaledHeight,
         [10]
       )
       ctx.fill()
@@ -207,244 +233,250 @@ export default class GameInfo {
     }
     
     // 绘制边框
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'
+    ctx.strokeStyle = `rgba(255, 255, 255, ${0.7 * easeOutProgress})`
     ctx.lineWidth = 2
     ctx.stroke()
     
-    // 绘制游戏结束标题背景
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-    this.drawRoundRect(
-      ctx,
-      screenWidth / 2 - 80,
-      screenHeight / 2 - 180,
-      160, 50,
-      [5]
-    )
-    ctx.fill()
-    
-    // 绘制游戏结束文字
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 24px Arial'
-    ctx.textAlign = 'center'
-    ctx.fillText(
-      '游戏结束',
-      screenWidth / 2,
-      screenHeight / 2 - 145
-    )
-
-    // 绘制分数背景
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'
-    this.drawRoundRect(
-      ctx,
-      screenWidth / 2 - 100,
-      screenHeight / 2 - 100,
-      200, 100,
-      [5]
-    )
-    ctx.fill()
-    
-    // 添加分数区域边框
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.8)'  // 金色边框
-    ctx.lineWidth = 2
-    ctx.stroke()
-
-    // 得分和最高分居中显示
-    // 得分标题
-    ctx.font = 'bold 20px Arial'
-    ctx.fillStyle = 'rgba(255, 215, 0, 0.9)'  // 金色
-    ctx.textAlign = 'center'
-    ctx.fillText(
-      '得分',
-      screenWidth / 2,
-      screenHeight / 2 - 80
-    )
-    
-    // 得分数值
-    ctx.font = 'bold 28px Arial'
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText(
-      `${score}`,
-      screenWidth / 2,
-      screenHeight / 2 - 50
-    )
-    
-    // 最高分标题
-    ctx.font = 'bold 16px Arial'
-    ctx.fillStyle = 'rgba(255, 215, 0, 0.7)'  // 金色，稍微淡一点
-    ctx.fillText(
-      '最高分',
-      screenWidth / 2,
-      screenHeight / 2 - 25
-    )
-    
-    // 最高分数值
-    ctx.font = '20px Arial'
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText(
-      `${highScore}`,
-      screenWidth / 2,
-      screenHeight / 2
-    )
-
-    // 重新开始按钮背景
-    ctx.fillStyle = 'rgba(0, 120, 180, 0.9)'
-    this.drawRoundRect(
-      ctx,
-      screenWidth / 2 - 80,
-      screenHeight / 2 + 20,
-      160, 50,
-      [5]
-    )
-    ctx.fill()
-    
-    // 添加按钮发光效果
-    ctx.shadowColor = 'rgba(0, 200, 255, 0.8)'
-    ctx.shadowBlur = 10
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.lineWidth = 2
-    ctx.stroke()
-    ctx.shadowBlur = 0
-
-    // 重新开始按钮文字
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 22px Arial'
-    ctx.textAlign = 'center'
-    ctx.fillText(
-      '重新开始',
-      screenWidth / 2,
-      screenHeight / 2 + 50
-    )
-    
-    // 更新重新开始按钮区域，确保与渲染位置一致
-    this.btnArea = {
-      startX: screenWidth / 2 - 80,
-      startY: screenHeight / 2 + 20,
-      endX  : screenWidth / 2 + 80,
-      endY  : screenHeight / 2 + 70
-    }
-    
-    // 成就按钮背景
-    ctx.fillStyle = 'rgba(0, 120, 180, 0.9)'
-    this.drawRoundRect(
-      ctx,
-      screenWidth / 2 - 80,
-      screenHeight / 2 + 90,
-      160, 50,
-      [5]
-    )
-    ctx.fill()
-    
-    // 添加按钮发光效果
-    ctx.shadowColor = 'rgba(0, 200, 255, 0.8)'
-    ctx.shadowBlur = 10
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.lineWidth = 2
-    ctx.stroke()
-    ctx.shadowBlur = 0
-    
-    // 成就按钮文字
-    ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 22px Arial'
-    ctx.fillText(
-      '成就',
-      screenWidth / 2,
-      screenHeight / 2 + 120
-    )
-    
-    // 更新成就按钮区域，确保与渲染位置一致
-    this.achievementBtnArea = {
-      startX: screenWidth / 2 - 80,
-      startY: screenHeight / 2 + 90,
-      endX  : screenWidth / 2 + 80,
-      endY  : screenHeight / 2 + 140
-    }
-    
-    // 如果启用了广告，绘制广告按钮
-    if (adsConfig) {
-      let buttonY = screenHeight / 2 + 160
+    // 元素只有在动画进行到一定程度才显示 (50%)
+    if (easeOutProgress > 0.5) {
+      // 计算元素的透明度
+      const elementsOpacity = (easeOutProgress - 0.5) * 2 // 从0.5到1映射为0到1
       
-      // 绘制复活按钮
-      if (adsConfig.revive.enabled && adManager.canShowReviveAd()) {
-        // 复活按钮背景
-        ctx.fillStyle = 'rgba(255, 150, 0, 0.9)'
-        this.drawRoundRect(
-          ctx,
-          screenWidth / 2 - 80,
-          buttonY,
-          160, 50,
-          [5]
-        )
-        ctx.fill()
-        
-        // 添加按钮发光效果
-        ctx.shadowColor = 'rgba(255, 200, 0, 0.8)'
-        ctx.shadowBlur = 10
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.shadowBlur = 0
-        
-        // 复活按钮文字
-        ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 22px Arial'
-        ctx.fillText(
-          '复活',
-          screenWidth / 2,
-          buttonY + 30
-        )
-        
-        // 保存复活按钮区域
-        this.reviveBtnArea = {
-          startX: screenWidth / 2 - 80,
-          startY: buttonY,
-          endX: screenWidth / 2 + 80,
-          endY: buttonY + 50
-        }
-        
-        buttonY += 70
-      } else {
-        this.reviveBtnArea = null
+      // 绘制游戏结束标题背景
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.7 * elementsOpacity})`
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - 80,
+        screenHeight / 2 - 180,
+        160, 50,
+        [5]
+      )
+      ctx.fill()
+      
+      // 绘制游戏结束文字
+      ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+      ctx.font = 'bold 24px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText(
+        '游戏结束',
+        screenWidth / 2,
+        screenHeight / 2 - 145
+      )
+  
+      // 绘制分数背景
+      ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * elementsOpacity})`
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - 100,
+        screenHeight / 2 - 100,
+        200, 100,
+        [5]
+      )
+      ctx.fill()
+      
+      // 添加分数区域边框
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.8 * elementsOpacity})`  // 金色边框
+      ctx.lineWidth = 2
+      ctx.stroke()
+  
+      // 得分和最高分居中显示
+      // 得分标题
+      ctx.font = 'bold 20px Arial'
+      ctx.fillStyle = `rgba(255, 215, 0, ${0.9 * elementsOpacity})`  // 金色
+      ctx.textAlign = 'center'
+      ctx.fillText(
+        '得分',
+        screenWidth / 2,
+        screenHeight / 2 - 80
+      )
+      
+      // 得分数值
+      ctx.font = 'bold 28px Arial'
+      ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+      ctx.fillText(
+        `${score}`,
+        screenWidth / 2,
+        screenHeight / 2 - 50
+      )
+      
+      // 最高分标题
+      ctx.font = 'bold 16px Arial'
+      ctx.fillStyle = `rgba(255, 215, 0, ${0.7 * elementsOpacity})`  // 金色，稍微淡一点
+      ctx.fillText(
+        '最高分',
+        screenWidth / 2,
+        screenHeight / 2 - 25
+      )
+      
+      // 最高分数值
+      ctx.font = '20px Arial'
+      ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+      ctx.fillText(
+        `${highScore}`,
+        screenWidth / 2,
+        screenHeight / 2
+      )
+  
+      // 重新开始按钮背景
+      ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - 80,
+        screenHeight / 2 + 20,
+        160, 50,
+        [5]
+      )
+      ctx.fill()
+      
+      // 添加按钮发光效果
+      ctx.shadowColor = `rgba(0, 200, 255, ${0.8 * elementsOpacity})`
+      ctx.shadowBlur = 10
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.shadowBlur = 0
+  
+      // 重新开始按钮文字
+      ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+      ctx.font = 'bold 22px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText(
+        '重新开始',
+        screenWidth / 2,
+        screenHeight / 2 + 50
+      )
+      
+      // 更新重新开始按钮区域，确保与渲染位置一致
+      this.btnArea = {
+        startX: screenWidth / 2 - 80,
+        startY: screenHeight / 2 + 20,
+        endX  : screenWidth / 2 + 80,
+        endY  : screenHeight / 2 + 70
       }
       
-      // 绘制特殊道具按钮
-      if (adsConfig.specialItem.enabled && adManager.canShowSpecialItemAd()) {
-        // 特殊道具按钮背景
-        ctx.fillStyle = 'rgba(33, 150, 243, 0.9)'
-        this.drawRoundRect(
-          ctx,
-          screenWidth / 2 - 80,
-          buttonY,
-          160, 50,
-          [5]
-        )
-        ctx.fill()
+      // 成就按钮背景
+      ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - 80,
+        screenHeight / 2 + 90,
+        160, 50,
+        [5]
+      )
+      ctx.fill()
+      
+      // 添加按钮发光效果
+      ctx.shadowColor = `rgba(0, 200, 255, ${0.8 * elementsOpacity})`
+      ctx.shadowBlur = 10
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
+      ctx.lineWidth = 2
+      ctx.stroke()
+      ctx.shadowBlur = 0
+      
+      // 成就按钮文字
+      ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+      ctx.font = 'bold 22px Arial'
+      ctx.fillText(
+        '成就',
+        screenWidth / 2,
+        screenHeight / 2 + 120
+      )
+      
+      // 更新成就按钮区域，确保与渲染位置一致
+      this.achievementBtnArea = {
+        startX: screenWidth / 2 - 80,
+        startY: screenHeight / 2 + 90,
+        endX  : screenWidth / 2 + 80,
+        endY  : screenHeight / 2 + 140
+      }
+      
+      // 如果启用了广告，绘制广告按钮
+      if (adsConfig) {
+        let buttonY = screenHeight / 2 + 160
         
-        // 添加按钮发光效果
-        ctx.shadowColor = 'rgba(100, 200, 255, 0.8)'
-        ctx.shadowBlur = 10
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
-        ctx.lineWidth = 2
-        ctx.stroke()
-        ctx.shadowBlur = 0
-        
-        // 特殊道具按钮文字
-        ctx.fillStyle = '#ffffff'
-        ctx.font = 'bold 22px Arial'
-        ctx.fillText(
-          '特殊道具',
-          screenWidth / 2,
-          buttonY + 30
-        )
-        
-        // 保存特殊道具按钮区域
-        this.specialItemBtnArea = {
-          startX: screenWidth / 2 - 80,
-          startY: buttonY,
-          endX: screenWidth / 2 + 80,
-          endY: buttonY + 50
+        // 绘制复活按钮
+        if (adsConfig.revive.enabled && adManager.canShowReviveAd()) {
+          // 复活按钮背景
+          ctx.fillStyle = `rgba(255, 150, 0, ${0.9 * elementsOpacity})`
+          this.drawRoundRect(
+            ctx,
+            screenWidth / 2 - 80,
+            buttonY,
+            160, 50,
+            [5]
+          )
+          ctx.fill()
+          
+          // 添加按钮发光效果
+          ctx.shadowColor = `rgba(255, 200, 0, ${0.8 * elementsOpacity})`
+          ctx.shadowBlur = 10
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
+          ctx.lineWidth = 2
+          ctx.stroke()
+          ctx.shadowBlur = 0
+          
+          // 复活按钮文字
+          ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+          ctx.font = 'bold 22px Arial'
+          ctx.fillText(
+            '复活',
+            screenWidth / 2,
+            buttonY + 30
+          )
+          
+          // 保存复活按钮区域
+          this.reviveBtnArea = {
+            startX: screenWidth / 2 - 80,
+            startY: buttonY,
+            endX: screenWidth / 2 + 80,
+            endY: buttonY + 50
+          }
+          
+          buttonY += 70
+        } else {
+          this.reviveBtnArea = null
         }
-      } else {
-        this.specialItemBtnArea = null
+        
+        // 绘制特殊道具按钮
+        if (adsConfig.specialItem.enabled && adManager.canShowSpecialItemAd()) {
+          // 特殊道具按钮背景
+          ctx.fillStyle = `rgba(33, 150, 243, ${0.9 * elementsOpacity})`
+          this.drawRoundRect(
+            ctx,
+            screenWidth / 2 - 80,
+            buttonY,
+            160, 50,
+            [5]
+          )
+          ctx.fill()
+          
+          // 添加按钮发光效果
+          ctx.shadowColor = `rgba(100, 200, 255, ${0.8 * elementsOpacity})`
+          ctx.shadowBlur = 10
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
+          ctx.lineWidth = 2
+          ctx.stroke()
+          ctx.shadowBlur = 0
+          
+          // 特殊道具按钮文字
+          ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+          ctx.font = 'bold 22px Arial'
+          ctx.fillText(
+            '特殊道具',
+            screenWidth / 2,
+            buttonY + 30
+          )
+          
+          // 保存特殊道具按钮区域
+          this.specialItemBtnArea = {
+            startX: screenWidth / 2 - 80,
+            startY: buttonY,
+            endX: screenWidth / 2 + 80,
+            endY: buttonY + 50
+          }
+        } else {
+          this.specialItemBtnArea = null
+        }
       }
     }
   }
@@ -518,6 +550,14 @@ export default class GameInfo {
       endX: buttonX + buttonWidth,
       endY: buttonY + buttonHeight
     }
+  }
+  
+  /**
+   * 重置游戏结束动画状态
+   */
+  resetGameOverAnimation() {
+    this.gameOverAnimationActive = false
+    this.gameOverAnimationStartTime = 0
   }
   
   /**
