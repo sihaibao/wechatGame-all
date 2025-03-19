@@ -325,6 +325,9 @@ export default class Main {
 
     this.bg.update()
 
+    // 更新玩家的道具状态（护盾等）
+    this.player.updatePowerStatus()
+
     databus.bullets
       .concat(databus.enemys)
       .concat(databus.powerItems)

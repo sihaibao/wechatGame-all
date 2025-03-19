@@ -186,12 +186,12 @@ export default class GameInfo {
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
     
-    ctx.beginPath()
-    ctx.roundRect(
+    this.drawRoundRect(
+      ctx,
       screenWidth / 2 - 60,
       screenHeight / 2 - 100 + 270,
       120, 40,
-      5
+      [5]
     )
     ctx.fill()
     ctx.stroke()
@@ -263,12 +263,12 @@ export default class GameInfo {
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
     
-    ctx.beginPath()
-    ctx.roundRect(
+    this.drawRoundRect(
+      ctx,
       screenWidth / 2 - 60,
       y,
       120, 40,
-      5
+      [5]
     )
     ctx.fill()
     ctx.stroke()
@@ -302,18 +302,16 @@ export default class GameInfo {
     ctx.fill()
     ctx.stroke()
     
-    // 绘制按钮图标（简单的炸弹图标）
-    ctx.fillStyle = '#ff0000'
-    ctx.beginPath()
-    ctx.arc(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2 - 10, 10, 0, 2 * Math.PI)
-    ctx.fill()
-    
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2)
-    ctx.lineTo(buttonX + buttonWidth / 2, buttonY + buttonHeight / 2 + 15)
-    ctx.stroke()
+    // 绘制炸弹图标
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 30px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(
+      '💣',
+      buttonX + buttonWidth / 2,
+      buttonY + buttonHeight / 2
+    )
     
     // 保存按钮区域
     this.useSpecialItemBtnArea = {
@@ -322,5 +320,32 @@ export default class GameInfo {
       endX: buttonX + buttonWidth,
       endY: buttonY + buttonHeight
     }
+  }
+  
+  /**
+   * 自定义圆角矩形绘制方法
+   * @param {Object} ctx Canvas上下文
+   * @param {Number} x 矩形左上角x坐标
+   * @param {Number} y 矩形左上角y坐标
+   * @param {Number} width 矩形宽度
+   * @param {Number} height 矩形高度
+   * @param {Array|Number} radius 圆角半径，可以是数组或单个数值
+   */
+  drawRoundRect(ctx, x, y, width, height, radius) {
+    if (typeof radius === 'number') {
+      radius = [radius, radius, radius, radius];
+    }
+    
+    ctx.beginPath();
+    ctx.moveTo(x + radius[0], y);
+    ctx.lineTo(x + width - radius[1], y);
+    ctx.arcTo(x + width, y, x + width, y + height, radius[1]);
+    ctx.lineTo(x + width, y + height - radius[2]);
+    ctx.arcTo(x + width, y + height, x, y + height, radius[2]);
+    ctx.lineTo(x + radius[3], y + height);
+    ctx.arcTo(x, y + height, x, y, radius[3]);
+    ctx.lineTo(x, y + radius[0]);
+    ctx.arcTo(x, y, x + width, y, radius[0]);
+    ctx.closePath();
   }
 }
