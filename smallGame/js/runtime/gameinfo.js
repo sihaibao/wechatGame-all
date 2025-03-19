@@ -144,30 +144,50 @@ export default class GameInfo {
    * @param {Object} adManager 广告管理器
    */
   renderGameOver(ctx, score, highScore, adsConfig, adManager) {
+    // 绘制背景框
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+    this.drawRoundRect(
+      ctx,
+      screenWidth / 2 - 110,
+      screenHeight / 2 - 160,
+      220, 370,
+      [10]
+    )
+    ctx.fill()
+    
+    // 绘制边框
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
+    ctx.lineWidth = 2
+    ctx.stroke()
+    
+    // 绘制游戏结束图标
     ctx.drawImage(atlas, 0, 0, 119, 108, screenWidth / 2 - 60, screenHeight / 2 - 100, 120, 120)
 
     ctx.fillStyle = '#ffffff'
     ctx.font    = '20px Arial'
-    ctx.textAlign = 'left'  // 确保文本左对齐
+    ctx.textAlign = 'center'  // 使标题居中
 
     ctx.fillText(
       '游戏结束',
-      screenWidth / 2 - 40,
+      screenWidth / 2,
       screenHeight / 2 - 100 + 50
     )
 
+    // 得分和最高分居中显示
+    ctx.textAlign = 'center'
     ctx.fillText(
-      `得分: ${score}`,
-      screenWidth / 2 - 40,
+      `得分：${score}`,
+      screenWidth / 2,
       screenHeight / 2 - 100 + 130
     )
     
     ctx.fillText(
-      `最高分: ${highScore}`,
-      screenWidth / 2 - 40,
+      `最高分：${highScore}`,
+      screenWidth / 2,
       screenHeight / 2 - 100 + 160
     )
 
+    // 重新开始按钮背景
     ctx.drawImage(
       atlas,
       120, 6, 39, 24,
@@ -176,9 +196,10 @@ export default class GameInfo {
       120, 40
     )
 
+    ctx.textAlign = 'center'  // 按钮文字居中
     ctx.fillText(
       '重新开始',
-      screenWidth / 2 - 40,
+      screenWidth / 2,
       screenHeight / 2 - 100 + 205
     )
     
@@ -190,10 +211,17 @@ export default class GameInfo {
       endY  : screenHeight / 2 - 100 + 220
     }
     
-    // 绘制成就按钮
-    ctx.fillStyle = '#4CAF50'
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = 2
+    // 成就按钮背景 - 使用与重新开始按钮相同的背景图片
+    ctx.drawImage(
+      atlas,
+      120, 6, 39, 24,
+      screenWidth / 2 - 60,
+      screenHeight / 2 - 100 + 230,
+      120, 40
+    )
+    
+    // 成就按钮文字
+    ctx.fillStyle = '#ffffff'
     
     // 更新成就按钮区域，确保与渲染位置一致
     this.achievementBtnArea = {
@@ -203,20 +231,9 @@ export default class GameInfo {
       endY  : screenHeight / 2 - 100 + 270
     }
     
-    this.drawRoundRect(
-      ctx,
-      screenWidth / 2 - 60,
-      screenHeight / 2 - 100 + 230,
-      120, 40,
-      [5]
-    )
-    ctx.fill()
-    ctx.stroke()
-    
-    ctx.fillStyle = '#ffffff'
     ctx.fillText(
       '成就',
-      screenWidth / 2 - 20,
+      screenWidth / 2,
       screenHeight / 2 - 100 + 255
     )
     
