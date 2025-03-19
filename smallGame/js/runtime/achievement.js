@@ -25,6 +25,14 @@ export default class AchievementSystem {
     this.maxScrollY = 0
     this.touchStartY = 0
     this.isTouching = false
+    this.velocity = 0
+    this.lastTouchY = 0
+    this.lastTouchTime = 0
+    this.inertialScrollId = null
+    
+    // 缓存屏幕尺寸
+    this.screenWidth = window.innerWidth
+    this.screenHeight = window.innerHeight
     
     // 初始化成就列表
     this.achievements = [
@@ -429,21 +437,35 @@ export default class AchievementSystem {
       return false
     }
     
-    // 处理返回按钮点击
-    if (type === 'touchend' && this.backButtonArea && 
-        x >= this.backButtonArea.startX && x <= this.backButtonArea.endX &&
-        y >= this.backButtonArea.startY && y <= this.backButtonArea.endY) {
-      this.hideScreen()
-      return true
+    // 检查是否点击了返回按钮
+    if (type === 'touchstart' && this.backButtonArea) {
+      if (x >= this.backButtonArea.startX && x <= this.backButtonArea.endX &&
+          y >= this.backButtonArea.startY && y <= this.backButtonArea.endY) {
+        console.log('点击了返回按钮区域，不处理滚动');
+        return false; // 返回false，让main.js处理返回按钮点击
+      }
     }
     
     // 处理滚动
     if (type === 'touchstart') {
       this.touchStartY = y
       this.isTouching = true
+      this.lastTouchTime = Date.now()
+      this.lastTouchY = y
+      this.velocity = 0
       return true
     } else if (type === 'touchmove' && this.isTouching) {
       const deltaY = y - this.touchStartY
+      
+      // 计算滚动速度
+      const now = Date.now()
+      const elapsed = now - this.lastTouchTime
+      if (elapsed > 0) {
+        this.velocity = (y - this.lastTouchY) / elapsed
+      }
+      this.lastTouchTime = now
+      this.lastTouchY = y
+      
       this.scrollY -= deltaY
       
       // 限制滚动范围
@@ -455,12 +477,55 @@ export default class AchievementSystem {
       
       this.touchStartY = y
       return true
-    } else if (type === 'touchend') {
+    } else if (type === 'touchend' && this.isTouching) {
       this.isTouching = false
+      
+      // 添加惯性滚动
+      if (Math.abs(this.velocity) > 0.1) {
+        this.startInertialScroll()
+      }
+      
       return true
     }
     
     return false
+  }
+  
+  /**
+   * 开始惯性滚动
+   */
+  startInertialScroll() {
+    // 清除之前的惯性滚动
+    if (this.inertialScrollId) {
+      clearInterval(this.inertialScrollId)
+    }
+    
+    // 设置初始速度和衰减因子
+    let velocity = this.velocity * 15 // 放大速度效果
+    const friction = 0.95 // 摩擦系数
+    
+    this.inertialScrollId = setInterval(() => {
+      // 应用速度
+      this.scrollY -= velocity
+      
+      // 限制滚动范围
+      if (this.scrollY < 0) {
+        this.scrollY = 0
+        velocity = 0
+      } else if (this.scrollY > this.maxScrollY) {
+        this.scrollY = this.maxScrollY
+        velocity = 0
+      }
+      
+      // 应用摩擦力
+      velocity *= friction
+      
+      // 当速度足够小时停止滚动
+      if (Math.abs(velocity) < 0.1) {
+        clearInterval(this.inertialScrollId)
+        this.inertialScrollId = null
+      }
+    }, 16) // 约60fps
   }
   
   /**
@@ -469,6 +534,16 @@ export default class AchievementSystem {
   showScreen() {
     this.isShowingScreen = true
     this.scrollY = 0 // 重置滚动位置
+    
+    // 清除任何正在进行的惯性滚动
+    if (this.inertialScrollId) {
+      clearInterval(this.inertialScrollId)
+      this.inertialScrollId = null
+    }
+    
+    // 预先计算一些值以提高性能
+    this.screenWidth = window.innerWidth
+    this.screenHeight = window.innerHeight
   }
   
   /**
@@ -476,6 +551,12 @@ export default class AchievementSystem {
    */
   hideScreen() {
     this.isShowingScreen = false
+    
+    // 清除任何正在进行的惯性滚动
+    if (this.inertialScrollId) {
+      clearInterval(this.inertialScrollId)
+      this.inertialScrollId = null
+    }
   }
   
   /**
@@ -483,8 +564,8 @@ export default class AchievementSystem {
    * @param {Object} ctx Canvas上下文
    */
   renderAchievementScreen(ctx) {
-    const screenWidth = window.innerWidth
-    const screenHeight = window.innerHeight
+    const screenWidth = this.screenWidth
+    const screenHeight = this.screenHeight
     
     // 绘制半透明背景
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
@@ -492,7 +573,7 @@ export default class AchievementSystem {
     
     // 绘制标题
     ctx.fillStyle = '#ffffff'
-    ctx.font = '24px Arial'
+    ctx.font = 'bold 24px Arial'
     ctx.textAlign = 'center'
     ctx.fillText('成就', screenWidth / 2, 40)
     
@@ -502,54 +583,77 @@ export default class AchievementSystem {
     ctx.font = '16px Arial'
     ctx.fillText(`已解锁: ${unlockedCount}/${totalCount}`, screenWidth / 2, 70)
     
-    // 获取要显示的成就列表
+    // 获取成就列表（按解锁状态排序）
     const achievements = this.getAchievements(true)
     
     // 定义网格布局参数
-    const itemWidth = screenWidth * 0.4
-    const itemHeight = 120  // 增加高度以适应多行文本
-    const itemsPerRow = 2
     const padding = 10
-    const startX = (screenWidth - (itemWidth * itemsPerRow + padding * (itemsPerRow - 1))) / 2
-    const startY = 100
+    const startX = 10
+    const startY = 80 // 标题下方的起始位置
+    const itemsPerRow = 2 // 每行显示2个成就
+    const itemWidth = (screenWidth - padding * (itemsPerRow + 1)) / itemsPerRow // 成就项宽度
+    const itemHeight = 110 // 调整成就项高度，使布局更紧凑
     
     // 计算内容总高度和最大滚动范围
     const rowCount = Math.ceil(achievements.length / itemsPerRow)
-    const contentHeight = startY + rowCount * (itemHeight + padding) + 70 // 加上底部按钮的空间
+    const contentHeight = startY + rowCount * (itemHeight + padding) + 70
     this.maxScrollY = Math.max(0, contentHeight - screenHeight)
     
-    // 创建裁剪区域，防止内容超出屏幕
+    // 计算可见行的范围
+    const visibleStartRow = Math.floor(this.scrollY / (itemHeight + padding))
+    const visibleEndRow = Math.ceil((this.scrollY + screenHeight - startY) / (itemHeight + padding))
+    
+    // 创建裁剪区域
     ctx.save()
     ctx.beginPath()
     ctx.rect(0, startY, screenWidth, screenHeight - startY - 70) // 减去底部按钮的空间
     ctx.clip()
     
+    // 应用滚动偏移
+    ctx.translate(0, -this.scrollY)
+    
     // 绘制成就列表
-    achievements.forEach((achievement, index) => {
+    for (let index = visibleStartRow * itemsPerRow; 
+         index < Math.min(achievements.length, (visibleEndRow + 1) * itemsPerRow); 
+         index++) {
+      const achievement = achievements[index]
       const row = Math.floor(index / itemsPerRow)
       const col = index % itemsPerRow
       
       const x = startX + col * (itemWidth + padding)
-      const y = startY + row * (itemHeight + padding) - this.scrollY
-      
-      // 只绘制可见区域内的成就项
-      if (y + itemHeight < startY || y > screenHeight - 70) {
-        return // 跳过不可见的成就项
-      }
+      const y = startY + row * (itemHeight + padding)
       
       // 绘制成就项背景
-      ctx.fillStyle = achievement.unlocked ? 'rgba(50, 150, 50, 0.7)' : 'rgba(100, 100, 100, 0.7)'
-      ctx.strokeStyle = achievement.unlocked ? '#ffcc00' : '#666666'
-      ctx.lineWidth = 2
+      if (achievement.unlocked) {
+        ctx.fillStyle = 'rgba(0, 100, 0, 0.8)' // 已解锁成就使用深绿色
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.9)' // 亮绿色边框
+      } else {
+        ctx.fillStyle = 'rgba(50, 50, 50, 0.8)' // 未解锁成就使用深灰色
+        ctx.strokeStyle = 'rgba(150, 150, 150, 0.9)' // 亮灰色边框
+      }
       
+      // 绘制圆角矩形背景
+      const radius = 5
       ctx.beginPath()
-      ctx.rect(x, y, itemWidth, itemHeight)
+      ctx.moveTo(x + radius, y)
+      ctx.lineTo(x + itemWidth - radius, y)
+      ctx.quadraticCurveTo(x + itemWidth, y, x + itemWidth, y + radius)
+      ctx.lineTo(x + itemWidth, y + itemHeight - radius)
+      ctx.quadraticCurveTo(x + itemWidth, y + itemHeight, x + itemWidth - radius, y + itemHeight)
+      ctx.lineTo(x + radius, y + itemHeight)
+      ctx.quadraticCurveTo(x, y + itemHeight, x, y + itemHeight - radius)
+      ctx.lineTo(x, y + radius)
+      ctx.quadraticCurveTo(x, y, x + radius, y)
+      ctx.closePath()
       ctx.fill()
+      
+      // 绘制边框
+      ctx.lineWidth = 2
       ctx.stroke()
       
       // 绘制成就名称
       ctx.fillStyle = '#ffffff'
-      ctx.font = '14px Arial'
+      ctx.font = 'bold 14px Arial'
       ctx.textAlign = 'left'
       
       // 如果是隐藏成就且未解锁，显示为???
@@ -564,13 +668,13 @@ export default class AchievementSystem {
       ctx.font = '12px Arial'
       const description = (achievement.secret && !achievement.unlocked) ? '隐藏成就' : achievement.description
       const descMaxHeight = 40 // 描述最大高度
-      this.drawWrappedText(ctx, description, x + 10, y + 50, maxWidth, 14, descMaxHeight)
+      this.drawWrappedText(ctx, description, x + 10, y + 45, maxWidth, 14, descMaxHeight)
       
       // 绘制进度条
       const progressBarWidth = itemWidth - 20
       const progressBarHeight = 10
       const progressX = x + 10
-      const progressY = y + itemHeight - 20 // 将进度条移到底部
+      const progressY = y + itemHeight - 35 // 将进度条往上移动更多
       
       // 背景
       ctx.fillStyle = '#333333'
@@ -594,51 +698,55 @@ export default class AchievementSystem {
       ctx.fillText(
         `${achievement.progress}/${achievement.target}`,
         progressX + progressBarWidth / 2,
-        progressY + progressBarHeight + 10
+        progressY + progressBarHeight + 12
       )
-    })
+    }
     
-    // 恢复裁剪区域
+    // 恢复状态
     ctx.restore()
     
-    // 绘制滚动指示器（如果有滚动）
+    // 添加滚动指示器（如果有可滚动内容）
     if (this.maxScrollY > 0) {
-      const indicatorHeight = 30
       const indicatorWidth = 5
-      const indicatorX = screenWidth - 10
-      const indicatorY = startY + 10
+      const indicatorHeight = 30
+      const indicatorX = screenWidth - indicatorWidth - 5
+      const indicatorY = 80 + (screenHeight - 120 - indicatorHeight) * (this.scrollY / this.maxScrollY)
       
-      // 背景轨道
-      ctx.fillStyle = 'rgba(100, 100, 100, 0.5)'
-      ctx.beginPath()
-      ctx.rect(indicatorX, indicatorY, indicatorWidth, screenHeight - startY - 90)
-      ctx.fill()
+      // 滚动条背景
+      ctx.fillStyle = 'rgba(100, 100, 100, 0.3)'
+      ctx.fillRect(indicatorX, 80, indicatorWidth, screenHeight - 120)
       
-      // 滚动条
-      const scrollRatio = this.scrollY / this.maxScrollY
-      const scrollBarHeight = Math.max(30, (screenHeight - startY - 90) * (screenHeight - startY - 90) / contentHeight)
-      const scrollBarY = indicatorY + scrollRatio * (screenHeight - startY - 90 - scrollBarHeight)
-      
+      // 滚动条指示器
       ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
-      ctx.beginPath()
-      ctx.rect(indicatorX, scrollBarY, indicatorWidth, scrollBarHeight)
-      ctx.fill()
+      ctx.fillRect(indicatorX, indicatorY, indicatorWidth, indicatorHeight)
     }
     
     // 绘制返回按钮
-    const buttonWidth = 100
+    const buttonWidth = 80
     const buttonHeight = 40
     const buttonX = screenWidth / 2 - buttonWidth / 2
     const buttonY = screenHeight - 60
     
-    ctx.fillStyle = '#4CAF50'
+    // 设置按钮颜色
+    ctx.fillStyle = '#4CAF50'; // 绿色按钮
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
     
-    ctx.beginPath()
-    ctx.rect(buttonX, buttonY, buttonWidth, buttonHeight)
-    ctx.fill()
-    ctx.stroke()
+    // 绘制圆角矩形按钮
+    const radius = 5;
+    ctx.beginPath();
+    ctx.moveTo(buttonX + radius, buttonY);
+    ctx.lineTo(buttonX + buttonWidth - radius, buttonY);
+    ctx.quadraticCurveTo(buttonX + buttonWidth, buttonY, buttonX + buttonWidth, buttonY + radius);
+    ctx.lineTo(buttonX + buttonWidth, buttonY + buttonHeight - radius);
+    ctx.quadraticCurveTo(buttonX + buttonWidth, buttonY + buttonHeight, buttonX + buttonWidth - radius, buttonY + buttonHeight);
+    ctx.lineTo(buttonX + radius, buttonY + buttonHeight);
+    ctx.quadraticCurveTo(buttonX, buttonY + buttonHeight, buttonX, buttonY + buttonHeight - radius);
+    ctx.lineTo(buttonX, buttonY + radius);
+    ctx.quadraticCurveTo(buttonX, buttonY, buttonX + radius, buttonY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
     
     ctx.fillStyle = '#ffffff'
     ctx.font = '16px Arial'

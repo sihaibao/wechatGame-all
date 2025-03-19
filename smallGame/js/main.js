@@ -183,37 +183,70 @@ export default class Main {
   }
 
   /**
-   * 触摸事件处理逻辑
+   * 触摸事件处理函数
    */
   touchEventHandler(e) {
+    console.log('触摸事件:', e.type);
     e.preventDefault()
 
-    const x = e.touches[0].clientX
-    const y = e.touches[0].clientY
+    let x = 0, y = 0
+    
+    // 根据事件类型获取触摸坐标
+    if (e.type === 'touchstart' || e.type === 'touchmove') {
+      if (e.touches && e.touches.length > 0) {
+        x = e.touches[0].clientX
+        y = e.touches[0].clientY
+      }
+    } else if (e.type === 'touchend' || e.type === 'touchcancel') {
+      console.log('touchend/touchcancel事件，changedTouches:', e.changedTouches && e.changedTouches.length);
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        x = e.changedTouches[0].clientX
+        y = e.changedTouches[0].clientY
+      }
+    }
+    
+    console.log('触摸坐标:', x, y);
 
     // 如果正在显示成就界面，优先处理成就界面的触摸事件
     if (this.showingAchievements && databus.achievementSystem) {
+      console.log('成就界面显示中，处理触摸事件');
       // 将触摸事件传递给成就系统
       const handled = databus.achievementSystem.handleTouch(x, y, e.type)
-      if (handled) {
-        // 如果成就系统处理了触摸事件，则不再继续处理
-        return
-      }
+      console.log('成就系统处理结果:', handled);
       
-      // 如果成就系统没有处理触摸事件，则检查是否点击了返回按钮
+      // 检查是否点击了返回按钮
       if (e.type === 'touchstart' && databus.achievementSystem.backButtonArea) {
-        if (x >= databus.achievementSystem.backButtonArea.startX
-          && x <= databus.achievementSystem.backButtonArea.endX
-          && y >= databus.achievementSystem.backButtonArea.startY
-          && y <= databus.achievementSystem.backButtonArea.endY) {
+        const backButton = databus.achievementSystem.backButtonArea;
+        
+        // 检查触摸位置是否在返回按钮区域内
+        const isInBackButton = 
+          x >= backButton.startX && x <= backButton.endX && 
+          y >= backButton.startY && y <= backButton.endY;
+        
+        console.log('检查返回按钮区域:', 
+          'x:', x, 'y:', y, 
+          'buttonX:', backButton.startX, 'buttonY:', backButton.startY,
+          'buttonEndX:', backButton.endX, 'buttonEndY:', backButton.endY,
+          '是否在按钮内:', isInBackButton);
+        
+        if (isInBackButton) {
+          console.log('点击在返回按钮区域内，执行返回操作');
           
           // 隐藏成就界面
-          this.showingAchievements = false
+          this.showingAchievements = false;
+          
+          // 调用成就系统的hideScreen方法
+          databus.achievementSystem.hideScreen();
           
           // 播放按钮音效
-          this.music.playShoot()
-          return
+          this.music.playShoot();
+          return;
         }
+      }
+      
+      // 如果成就系统处理了触摸事件，则不再继续处理
+      if (handled) {
+        return
       }
       
       // 如果在成就界面但没有点击任何按钮，则不再继续处理
