@@ -22,7 +22,10 @@ export default class DataBus {
 
     // 初始化成就系统
     if (Config.achievements.enabled) {
+      console.log('初始化成就系统')
       this.achievementSystem = new AchievementSystem()
+      // 确保成就系统已正确加载数据
+      console.log('成就系统初始化完成，已解锁成就数量:', this.achievementSystem.getUnlockedCount())
     }
     
     // 初始化关卡系统
@@ -99,7 +102,10 @@ export default class DataBus {
     
     // 更新成就系统
     if (Config.achievements.enabled && this.achievementSystem) {
+      console.log('游戏结束，更新成就系统，当前分数:', this.score)
       this.achievementSystem.recordGameEnd(this.score)
+    } else {
+      console.log('成就系统未启用或未初始化')
     }
   }
   
@@ -219,6 +225,7 @@ export default class DataBus {
     
     // 更新成就系统
     if (Config.achievements.enabled && this.achievementSystem) {
+      console.log('记录击败敌人，当前局内击败敌人数:', this.enemiesDefeated)
       this.achievementSystem.recordEnemyDefeated()
     }
   }
@@ -232,6 +239,7 @@ export default class DataBus {
     
     // 更新成就系统
     if (Config.achievements.enabled && this.achievementSystem) {
+      console.log('记录收集道具:', itemType, '，当前局内收集道具数:', this.itemsCollected)
       this.achievementSystem.recordItemCollected(itemType)
     }
   }

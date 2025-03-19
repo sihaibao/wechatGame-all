@@ -180,12 +180,19 @@ export default class AchievementSystem {
         // 更新成就状态
         this.achievements.forEach((achievement, index) => {
           if (parsed[achievement.id]) {
+            // 确保保留原始成就的所有属性，只更新解锁状态和进度
             this.achievements[index] = {
               ...achievement,
-              ...parsed[achievement.id]
+              unlocked: parsed[achievement.id].unlocked,
+              progress: parsed[achievement.id].progress
             }
+            
+            // 输出日志，确认加载成功
+            console.log(`成就加载: ${achievement.id}, 进度: ${this.achievements[index].progress}/${achievement.target}, 已解锁: ${this.achievements[index].unlocked}`)
           }
         })
+      } else {
+        console.log('未找到已保存的成就数据，使用默认值')
       }
     } catch (e) {
       console.error('读取成就数据失败', e)
@@ -204,9 +211,14 @@ export default class AchievementSystem {
           unlocked: achievement.unlocked,
           progress: achievement.progress
         }
+        
+        // 输出日志，确认保存的数据
+        console.log(`保存成就: ${achievement.id}, 进度: ${achievement.progress}/${achievement.target}, 已解锁: ${achievement.unlocked}`)
       })
       
-      wx.setStorageSync('achievements', JSON.stringify(achievementsToSave))
+      const jsonData = JSON.stringify(achievementsToSave)
+      wx.setStorageSync('achievements', jsonData)
+      console.log('成就数据已保存到本地存储', jsonData)
     } catch (e) {
       console.error('保存成就数据失败', e)
     }
@@ -256,24 +268,41 @@ export default class AchievementSystem {
   updateAchievement(id, progress, absolute = false) {
     const achievementIndex = this.achievements.findIndex(a => a.id === id)
     
-    if (achievementIndex === -1) return
+    if (achievementIndex === -1) {
+      console.error(`找不到成就: ${id}`)
+      return
+    }
     
     const achievement = this.achievements[achievementIndex]
+    console.log(`更新成就: ${id}, 当前进度: ${achievement.progress}/${achievement.target}, 新增进度: ${progress}, 绝对值模式: ${absolute}`)
     
-    // 如果已解锁，不再更新
-    if (achievement.unlocked) return
+    // 如果已解锁，不再更新进度
+    if (achievement.unlocked) {
+      console.log(`成就 ${id} 已解锁，不再更新进度`)
+      return
+    }
     
     // 更新进度
+    const oldProgress = achievement.progress
     if (absolute) {
       achievement.progress = progress
     } else {
       achievement.progress += progress
     }
     
+    // 确保进度不超过目标值
+    if (achievement.progress > achievement.target) {
+      achievement.progress = achievement.target
+    }
+    
+    console.log(`成就 ${id} 进度更新: ${oldProgress} -> ${achievement.progress}/${achievement.target}`)
+    
     // 检查是否达成
     if (achievement.progress >= achievement.target) {
       achievement.progress = achievement.target
       achievement.unlocked = true
+      
+      console.log(`成就 ${id} 已解锁!`)
       
       // 添加到通知队列
       this.notificationQueue.push(achievement)
@@ -326,6 +355,8 @@ export default class AchievementSystem {
    * @param {Number} score 本局得分
    */
   recordGameEnd(score) {
+    console.log(`记录游戏结束，得分: ${score}，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
+    
     // 更新统计数据
     this.stats.totalGamesPlayed++
     
@@ -341,27 +372,33 @@ export default class AchievementSystem {
     
     // 检查分数相关成就
     if (score >= 100) {
+      console.log(`更新成就'score100'，当前分数: ${score}`)
       this.updateAchievement('score100', score, true)
     }
     
     if (score >= 500) {
+      console.log(`更新成就'score500'，当前分数: ${score}`)
       this.updateAchievement('score500', score, true)
     }
     
     if (score >= 1000) {
+      console.log(`更新成就'score1000'，当前分数: ${score}`)
       this.updateAchievement('score1000', score, true)
     }
     
     // 检查敌人击败数相关成就
     if (this.stats.currentGameEnemiesDefeated >= 10) {
+      console.log(`更新成就'enemy10'，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
       this.updateAchievement('enemy10', this.stats.currentGameEnemiesDefeated, true)
     }
     
     if (this.stats.currentGameEnemiesDefeated >= 50) {
+      console.log(`更新成就'enemy50'，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
       this.updateAchievement('enemy50', this.stats.currentGameEnemiesDefeated, true)
     }
     
     if (this.stats.currentGameEnemiesDefeated >= 100) {
+      console.log(`更新成就'enemy100'，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
       this.updateAchievement('enemy100', this.stats.currentGameEnemiesDefeated, true)
     }
   }
@@ -379,6 +416,8 @@ export default class AchievementSystem {
    * @param {String} itemType 道具类型
    */
   recordItemCollected(itemType) {
+    console.log(`记录收集道具: ${itemType}, 当前总收集道具数: ${this.stats.totalItemsCollected}`)
+    
     this.stats.totalItemsCollected++
     
     // 更新道具收集成就
@@ -570,34 +609,42 @@ export default class AchievementSystem {
    * @param {Object} ctx Canvas上下文
    */
   renderAchievementScreen(ctx) {
-    const screenWidth = this.screenWidth
-    const screenHeight = this.screenHeight
+    if (!this.isShowingScreen) return
+    
+    // 输出所有成就的当前状态，用于调试
+    console.log('渲染成就界面，当前成就状态:')
+    this.achievements.forEach(achievement => {
+      console.log(`${achievement.id}: 进度 ${achievement.progress}/${achievement.target}, 已解锁: ${achievement.unlocked}`)
+    })
+    
+    const screenWidth = window.innerWidth
+    const screenHeight = window.innerHeight
     
     // 绘制半透明背景
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.85)'
     ctx.fillRect(0, 0, screenWidth, screenHeight)
     
     // 绘制标题
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 24px Arial'
     ctx.textAlign = 'center'
-    ctx.fillText('成就', screenWidth / 2, 40)
+    ctx.fillText('成就列表', screenWidth / 2, 50)
     
     // 绘制解锁进度
     const unlockedCount = this.getUnlockedCount()
     const totalCount = this.getTotalCount()
     ctx.font = '16px Arial'
-    ctx.fillText(`已解锁: ${unlockedCount}/${totalCount}`, screenWidth / 2, 70)
+    ctx.fillText(`已解锁: ${unlockedCount}/${totalCount}`, screenWidth / 2, 80)
     
-    // 获取成就列表（按解锁状态排序）
+    // 获取成就列表（包括未解锁的非隐藏成就）
     const achievements = this.getAchievements(true)
     
-    // 定义网格布局参数
+    // 计算布局参数
+    const startY = 100
     const padding = 10
-    const startX = 10
-    const startY = 80 // 标题下方的起始位置
-    const itemsPerRow = 2 // 每行显示2个成就
-    const itemWidth = (screenWidth - padding * (itemsPerRow + 1)) / itemsPerRow // 成就项宽度
+    const itemsPerRow = screenWidth >= 500 ? 2 : 1
+    const itemWidth = (screenWidth - (itemsPerRow + 1) * padding) / itemsPerRow
+    const startX = padding
     const itemHeight = 110 // 调整成就项高度，使布局更紧凑
     
     // 计算内容总高度和最大滚动范围
@@ -682,19 +729,55 @@ export default class AchievementSystem {
       const progressX = x + 10
       const progressY = y + itemHeight - 35 // 将进度条往上移动更多
       
-      // 背景
+      // 进度条背景
       ctx.fillStyle = '#333333'
       ctx.beginPath()
       ctx.rect(progressX, progressY, progressBarWidth, progressBarHeight)
       ctx.fill()
       
+      // 进度条边框
+      ctx.strokeStyle = '#555555'
+      ctx.lineWidth = 1
+      ctx.strokeRect(progressX, progressY, progressBarWidth, progressBarHeight)
+      
       // 进度
       if (achievement.progress > 0) {
         const progressWidth = (achievement.progress / achievement.target) * progressBarWidth
-        ctx.fillStyle = achievement.unlocked ? '#00ff00' : '#ffcc00'
+        
+        // 创建渐变色进度条
+        let progressGradient = ctx.createLinearGradient(
+          progressX, progressY, 
+          progressX + progressWidth, progressY
+        );
+        
+        if (achievement.unlocked) {
+          // 已解锁成就使用绿色渐变
+          progressGradient.addColorStop(0, 'rgba(0, 200, 0, 0.8)');
+          progressGradient.addColorStop(1, 'rgba(0, 255, 0, 0.9)');
+        } else {
+          // 未解锁成就使用黄色渐变
+          progressGradient.addColorStop(0, 'rgba(200, 150, 0, 0.8)');
+          progressGradient.addColorStop(1, 'rgba(255, 200, 0, 0.9)');
+        }
+        
+        ctx.fillStyle = progressGradient;
         ctx.beginPath()
         ctx.rect(progressX, progressY, progressWidth, progressBarHeight)
         ctx.fill()
+        
+        // 添加进度条光泽效果
+        const shineHeight = progressBarHeight / 2;
+        let shineGradient = ctx.createLinearGradient(
+          progressX, progressY, 
+          progressX, progressY + shineHeight
+        );
+        shineGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+        shineGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        
+        ctx.fillStyle = shineGradient;
+        ctx.beginPath();
+        ctx.rect(progressX, progressY, progressWidth, shineHeight);
+        ctx.fill();
       }
       
       // 进度文本
