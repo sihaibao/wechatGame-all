@@ -179,6 +179,9 @@ export default class Main {
         
         // 游戏结束时记录游戏结束
         databus.recordGameEnd()
+        
+        // 清除所有游戏元素和动画，避免游戏结束后仍然显示
+        databus.clearAllElements()
 
         break
       }
@@ -423,25 +426,28 @@ export default class Main {
 
     this.bg.render(ctx)
 
-    databus.bullets
-      .concat(databus.enemys)
-      .concat(databus.powerItems)
-      .forEach((item) => {
-        item.drawToCanvas(ctx)
-      })
+    // 只在游戏未结束时渲染敌机、子弹和道具
+    if (!databus.gameOver) {
+      databus.bullets
+        .concat(databus.enemys)
+        .concat(databus.powerItems)
+        .forEach((item) => {
+          item.drawToCanvas(ctx)
+        })
 
-    this.player.drawToCanvas(ctx)
-    
-    // 渲染动画
-    databus.animations.forEach((ani) => {
-      if (ani.isPlaying) {
-        ani.aniRender(ctx)
+      this.player.drawToCanvas(ctx)
+      
+      // 渲染动画
+      databus.animations.forEach((ani) => {
+        if (ani.isPlaying) {
+          ani.aniRender(ctx)
+        }
+      })
+      
+      // 如果有特殊道具，渲染使用按钮
+      if (databus.specialItem) {
+        this.gameinfo.renderSpecialItemButton(ctx)
       }
-    })
-    
-    // 如果有特殊道具，渲染使用按钮
-    if (databus.specialItem) {
-      this.gameinfo.renderSpecialItemButton(ctx)
     }
 
     // 游戏结束停止帧循环

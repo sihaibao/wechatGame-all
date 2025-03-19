@@ -300,4 +300,17 @@ export default class DataBus {
     this.specialItem = null
     return result
   }
+  
+  // 清除所有游戏元素和动画
+  clearAllElements() {
+    this.bullets    = []
+    this.enemys     = []
+    this.powerItems = []
+    
+    // 停止所有动画
+    this.animations.forEach(ani => {
+      ani.stop()
+    })
+    this.animations = []
+  }
 }
