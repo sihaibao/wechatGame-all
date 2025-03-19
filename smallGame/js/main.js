@@ -244,12 +244,12 @@ export default class Main {
 
     // 游戏结束状态下的按钮处理
     if (databus.gameOver) {
-      // 添加延迟检查，游戏结束后1秒内不响应按钮操作，防止误触
+      // 添加延迟检查，游戏结束后2秒内不响应按钮操作，防止误触
       const currentTime = Date.now();
       const timeSinceGameOver = currentTime - databus.gameOverTime;
       
-      // 如果游戏结束后不到1秒，不响应任何按钮操作
-      if (timeSinceGameOver < 1000) {
+      // 如果游戏结束后不到2秒，不响应任何按钮操作
+      if (timeSinceGameOver < 2000) {
         return;
       }
       
