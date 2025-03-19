@@ -234,30 +234,15 @@ export default class GameInfo {
       const elementsOpacity = (easeOutProgress - 0.5) * 2 // 从0.5到1映射为0到1
       
       // 绘制游戏结束标题背景
-      ctx.fillStyle = `rgba(50, 0, 0, ${0.8 * elementsOpacity})`  // 深红色背景
-      ctx.fillRect(
-        screenWidth / 2 - 80,
-        screenHeight / 2 - 180,
-        160, 50
-      )
+      // 移除标题背景矩形
       
       // 添加游戏结束标题边框效果
-      ctx.strokeStyle = `rgba(255, 50, 50, ${0.9 * elementsOpacity})`  // 红色边框
-      ctx.lineWidth = 3
-      ctx.strokeRect(
-        screenWidth / 2 - 80,
-        screenHeight / 2 - 180,
-        160, 50
-      )
+      // 移除标题边框
       
       // 添加发光效果
       ctx.shadowColor = `rgba(255, 0, 0, ${0.8 * elementsOpacity})`  // 更鲜艳的红色光晕
       ctx.shadowBlur = 12
-      ctx.strokeRect(
-        screenWidth / 2 - 80,
-        screenHeight / 2 - 180,
-        160, 50
-      )
+      // 移除发光边框
       ctx.shadowBlur = 0
       
       // 绘制游戏结束文字
@@ -292,22 +277,13 @@ export default class GameInfo {
       ctx.shadowOffsetY = 0
   
       // 绘制分数背景
-      ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * elementsOpacity})`
-      ctx.fillRect(
-        screenWidth / 2 - 100,
-        screenHeight / 2 - 100,
-        200, 100
-      )
+      // 移除分数背景矩形
       
       // 添加分数区域边框
       ctx.strokeStyle = `rgba(255, 215, 0, ${0.8 * elementsOpacity})`  // 金色边框
       ctx.lineWidth = 2
-      ctx.strokeRect(
-        screenWidth / 2 - 100,
-        screenHeight / 2 - 100,
-        200, 100
-      )
-  
+      // 移除分数区域边框
+      
       // 得分和最高分居中显示
       // 得分标题
       ctx.font = 'bold 20px Arial'
@@ -349,80 +325,109 @@ export default class GameInfo {
       // 重新开始按钮背景 - 增加按钮大小和视觉效果
       ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
       
-      // 使用普通矩形而不是圆角矩形
-      ctx.fillRect(
-        screenWidth / 2 - 100,  // 增加宽度
-        screenHeight / 2 + 20,
-        200, 60  // 增加高度
+      // 获取文本宽度以创建更紧凑的按钮
+      ctx.font = 'bold 26px Arial'
+      const restartTextWidth = ctx.measureText('重新开始').width
+      const restartButtonWidth = restartTextWidth + 30 // 文字两侧各留15px的间距，更紧凑
+      const restartButtonHeight = 36 // 更紧凑的高度
+      const buttonRadius = 10 // 圆角半径
+      
+      // 使用圆角矩形
+      ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - restartButtonWidth / 2,
+        screenHeight / 2 + 30,
+        restartButtonWidth,
+        restartButtonHeight,
+        buttonRadius
       );
+      ctx.fill();
       
       // 增强按钮发光效果
       ctx.shadowColor = `rgba(0, 200, 255, ${0.9 * elementsOpacity})`
       ctx.shadowBlur = 15
       ctx.strokeStyle = `rgba(255, 255, 255, ${1.0 * elementsOpacity})`
       ctx.lineWidth = 3
-      ctx.strokeRect(
-        screenWidth / 2 - 100,  // 增加宽度
-        screenHeight / 2 + 20,
-        200, 60  // 增加高度
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - restartButtonWidth / 2,
+        screenHeight / 2 + 30,
+        restartButtonWidth,
+        restartButtonHeight,
+        buttonRadius
       );
+      ctx.stroke();
       ctx.shadowBlur = 0
   
       // 重新开始按钮文字 - 增大字体
       ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
-      ctx.font = 'bold 26px Arial'
       ctx.textAlign = 'center'
       ctx.fillText(
         '重新开始',
         screenWidth / 2,
-        screenHeight / 2 + 55
+        screenHeight / 2 + 57 // 调整文字垂直位置，使其居中
       )
       
-      // 更新重新开始按钮区域，确保与渲染位置一致 - 扩大点击区域
+      // 更新重新开始按钮区域，确保与渲染位置一致
       this.btnArea = {
-        startX: screenWidth / 2 - 100,
-        startY: screenHeight / 2 + 20,
-        endX  : screenWidth / 2 + 100,
-        endY  : screenHeight / 2 + 80
+        startX: screenWidth / 2 - restartButtonWidth / 2,
+        startY: screenHeight / 2 + 30,
+        endX  : screenWidth / 2 + restartButtonWidth / 2,
+        endY  : screenHeight / 2 + 30 + restartButtonHeight
       }
       
       // 成就按钮背景
       ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
       
-      // 使用普通矩形而不是圆角矩形
-      ctx.fillRect(
-        screenWidth / 2 - 80,
+      // 获取文本宽度以创建更紧凑的按钮
+      ctx.font = 'bold 22px Arial'
+      const achievementTextWidth = ctx.measureText('成就').width
+      const achievementButtonWidth = achievementTextWidth + 30 // 文字两侧各留15px的间距，更紧凑
+      const achievementButtonHeight = 32 // 更紧凑的高度
+      
+      // 使用圆角矩形
+      ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - achievementButtonWidth / 2,
         screenHeight / 2 + 90,
-        160, 50
+        achievementButtonWidth,
+        achievementButtonHeight,
+        buttonRadius
       );
+      ctx.fill();
       
       // 添加按钮发光效果
       ctx.shadowColor = `rgba(0, 200, 255, ${0.8 * elementsOpacity})`
       ctx.shadowBlur = 10
       ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
       ctx.lineWidth = 2
-      ctx.strokeRect(
-        screenWidth / 2 - 80,
+      this.drawRoundRect(
+        ctx,
+        screenWidth / 2 - achievementButtonWidth / 2,
         screenHeight / 2 + 90,
-        160, 50
+        achievementButtonWidth,
+        achievementButtonHeight,
+        buttonRadius
       );
+      ctx.stroke();
       ctx.shadowBlur = 0
       
       // 成就按钮文字
       ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
-      ctx.font = 'bold 22px Arial'
       ctx.fillText(
         '成就',
         screenWidth / 2,
-        screenHeight / 2 + 120
+        screenHeight / 2 + 107 // 调整文字垂直位置，使其居中
       )
       
       // 更新成就按钮区域，确保与渲染位置一致
       this.achievementBtnArea = {
-        startX: screenWidth / 2 - 80,
+        startX: screenWidth / 2 - achievementButtonWidth / 2,
         startY: screenHeight / 2 + 90,
-        endX  : screenWidth / 2 + 80,
-        endY  : screenHeight / 2 + 140
+        endX  : screenWidth / 2 + achievementButtonWidth / 2,
+        endY  : screenHeight / 2 + 90 + achievementButtonHeight
       }
       
       // 如果启用了广告，绘制广告按钮
@@ -433,42 +438,58 @@ export default class GameInfo {
         if (adsConfig.revive.enabled && adManager.canShowReviveAd()) {
           // 复活按钮背景
           ctx.fillStyle = `rgba(255, 150, 0, ${0.9 * elementsOpacity})`
-          ctx.fillRect(
-            screenWidth / 2 - 80,
+          
+          // 获取文本宽度以创建更紧凑的按钮
+          ctx.font = 'bold 22px Arial'
+          const reviveTextWidth = ctx.measureText('复活').width
+          const reviveButtonWidth = reviveTextWidth + 30 // 文字两侧各留15px的间距，更紧凑
+          const reviveButtonHeight = 32 // 更紧凑的高度
+          
+          // 使用圆角矩形
+          ctx.fillStyle = `rgba(255, 150, 0, ${0.9 * elementsOpacity})`
+          this.drawRoundRect(
+            ctx,
+            screenWidth / 2 - reviveButtonWidth / 2,
             buttonY,
-            160, 50
+            reviveButtonWidth,
+            reviveButtonHeight,
+            buttonRadius
           );
+          ctx.fill();
           
           // 添加按钮发光效果
           ctx.shadowColor = `rgba(255, 200, 0, ${0.8 * elementsOpacity})`
           ctx.shadowBlur = 10
           ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
           ctx.lineWidth = 2
-          ctx.strokeRect(
-            screenWidth / 2 - 80,
+          this.drawRoundRect(
+            ctx,
+            screenWidth / 2 - reviveButtonWidth / 2,
             buttonY,
-            160, 50
+            reviveButtonWidth,
+            reviveButtonHeight,
+            buttonRadius
           );
+          ctx.stroke();
           ctx.shadowBlur = 0
           
           // 复活按钮文字
           ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
-          ctx.font = 'bold 22px Arial'
           ctx.fillText(
             '复活',
             screenWidth / 2,
-            buttonY + 30
+            buttonY + 19 // 调整文字垂直位置，使其居中
           )
           
           // 保存复活按钮区域
           this.reviveBtnArea = {
-            startX: screenWidth / 2 - 80,
+            startX: screenWidth / 2 - reviveButtonWidth / 2,
             startY: buttonY,
-            endX: screenWidth / 2 + 80,
-            endY: buttonY + 50
+            endX: screenWidth / 2 + reviveButtonWidth / 2,
+            endY: buttonY + reviveButtonHeight
           }
           
-          buttonY += 70
+          buttonY += 60 // 减少按钮之间的间距
         } else {
           this.reviveBtnArea = null
         }
@@ -477,39 +498,55 @@ export default class GameInfo {
         if (adsConfig.specialItem.enabled && adManager.canShowSpecialItemAd()) {
           // 特殊道具按钮背景
           ctx.fillStyle = `rgba(33, 150, 243, ${0.9 * elementsOpacity})`
-          ctx.fillRect(
-            screenWidth / 2 - 80,
+          
+          // 获取文本宽度以创建更紧凑的按钮
+          ctx.font = 'bold 22px Arial'
+          const specialItemTextWidth = ctx.measureText('特殊道具').width
+          const specialItemButtonWidth = specialItemTextWidth + 30 // 文字两侧各留15px的间距，更紧凑
+          const specialItemButtonHeight = 32 // 更紧凑的高度
+          
+          // 使用圆角矩形
+          ctx.fillStyle = `rgba(33, 150, 243, ${0.9 * elementsOpacity})`
+          this.drawRoundRect(
+            ctx,
+            screenWidth / 2 - specialItemButtonWidth / 2,
             buttonY,
-            160, 50
+            specialItemButtonWidth,
+            specialItemButtonHeight,
+            buttonRadius
           );
+          ctx.fill();
           
           // 添加按钮发光效果
           ctx.shadowColor = `rgba(100, 200, 255, ${0.8 * elementsOpacity})`
           ctx.shadowBlur = 10
           ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
           ctx.lineWidth = 2
-          ctx.strokeRect(
-            screenWidth / 2 - 80,
+          this.drawRoundRect(
+            ctx,
+            screenWidth / 2 - specialItemButtonWidth / 2,
             buttonY,
-            160, 50
+            specialItemButtonWidth,
+            specialItemButtonHeight,
+            buttonRadius
           );
+          ctx.stroke();
           ctx.shadowBlur = 0
           
           // 特殊道具按钮文字
           ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
-          ctx.font = 'bold 22px Arial'
           ctx.fillText(
             '特殊道具',
             screenWidth / 2,
-            buttonY + 30
+            buttonY + 19 // 调整文字垂直位置，使其居中
           )
           
           // 保存特殊道具按钮区域
           this.specialItemBtnArea = {
-            startX: screenWidth / 2 - 80,
+            startX: screenWidth / 2 - specialItemButtonWidth / 2,
             startY: buttonY,
-            endX: screenWidth / 2 + 80,
-            endY: buttonY + 50
+            endX: screenWidth / 2 + specialItemButtonWidth / 2,
+            endY: buttonY + specialItemButtonHeight
           }
         } else {
           this.specialItemBtnArea = null
@@ -526,27 +563,43 @@ export default class GameInfo {
    * @param {String} color 按钮颜色
    */
   renderAdButton(ctx, text, y, color) {
+    // 测量文本宽度以创建更紧凑的按钮
+    ctx.font = '20px Arial'
+    const textWidth = ctx.measureText(text).width
+    const buttonWidth = textWidth + 24 // 文字两侧各留12px的间距，更紧凑
+    const buttonHeight = 32 // 更紧凑的高度
+    const buttonRadius = 8 // 圆角半径
+    
+    // 使用圆角矩形
     ctx.fillStyle = color
+    this.drawRoundRect(
+      ctx,
+      screenWidth / 2 - buttonWidth / 2,
+      y,
+      buttonWidth,
+      buttonHeight,
+      buttonRadius
+    );
+    ctx.fill();
+    
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
-    
-    ctx.fillRect(
-      screenWidth / 2 - 60,
+    this.drawRoundRect(
+      ctx,
+      screenWidth / 2 - buttonWidth / 2,
       y,
-      120, 40
+      buttonWidth,
+      buttonHeight,
+      buttonRadius
     );
-    ctx.strokeRect(
-      screenWidth / 2 - 60,
-      y,
-      120, 40
-    );
+    ctx.stroke();
     
     ctx.fillStyle = '#ffffff'
-    ctx.font = '20px Arial'
+    ctx.textAlign = 'center'
     ctx.fillText(
       text,
-      screenWidth / 2 - text.length * 10,
-      y + 25
+      screenWidth / 2,
+      y + 22 // 调整文字垂直位置，使其居中
     )
   }
   
@@ -555,10 +608,11 @@ export default class GameInfo {
    * @param {Object} ctx Canvas上下文
    */
   renderSpecialItemButton(ctx) {
-    const buttonWidth = 60
-    const buttonHeight = 60
-    const buttonX = screenWidth - buttonWidth - 20
-    const buttonY = screenHeight - buttonHeight - 20
+    // 使用更小的按钮尺寸，更加紧凑
+    const buttonWidth = 45
+    const buttonHeight = 45
+    const buttonX = screenWidth - buttonWidth - 10
+    const buttonY = screenHeight - buttonHeight - 10
     
     // 绘制按钮背景
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
@@ -572,7 +626,7 @@ export default class GameInfo {
     
     // 绘制炸弹图标
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 30px Arial'
+    ctx.font = 'bold 24px Arial' // 稍微减小字体大小
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(
