@@ -210,9 +210,6 @@ export default class Main {
     // 如果正在显示成就界面，优先处理成就界面的触摸事件
     if (this.showingAchievements && databus.achievementSystem) {
       console.log('成就界面显示中，处理触摸事件');
-      // 将触摸事件传递给成就系统
-      const handled = databus.achievementSystem.handleTouch(x, y, e.type)
-      console.log('成就系统处理结果:', handled);
       
       // 检查是否点击了返回按钮
       if (e.type === 'touchstart' && databus.achievementSystem.backButtonArea) {
@@ -243,6 +240,10 @@ export default class Main {
           return;
         }
       }
+      
+      // 将触摸事件传递给成就系统
+      const handled = databus.achievementSystem.handleTouch(x, y, e.type)
+      console.log('成就系统处理结果:', handled);
       
       // 如果成就系统处理了触摸事件，则不再继续处理
       if (handled) {

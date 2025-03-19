@@ -166,6 +166,9 @@ export default class AchievementSystem {
     
     // 加载统计数据
     this.loadStats()
+    
+    // 新增debugRender属性
+    this.debugRender = true
   }
   
   /**
@@ -476,6 +479,8 @@ export default class AchievementSystem {
       return false
     }
     
+    console.log(`成就系统处理触摸事件: ${type}, 坐标: ${x}, ${y}`);
+    
     // 检查是否点击了返回按钮
     if (type === 'touchstart' && this.backButtonArea) {
       if (x >= this.backButtonArea.startX && x <= this.backButtonArea.endX &&
@@ -492,9 +497,17 @@ export default class AchievementSystem {
       this.lastTouchTime = Date.now()
       this.lastTouchY = y
       this.velocity = 0
+      
+      // 停止任何正在进行的惯性滚动
+      if (this.inertialScrollId) {
+        clearInterval(this.inertialScrollId)
+        this.inertialScrollId = null
+      }
+      
+      console.log(`触摸开始，初始Y坐标: ${y}`);
       return true
     } else if (type === 'touchmove' && this.isTouching) {
-      const deltaY = y - this.touchStartY
+      const deltaY = y - this.lastTouchY
       
       // 计算滚动速度
       const now = Date.now()
@@ -514,17 +527,20 @@ export default class AchievementSystem {
         this.scrollY = this.maxScrollY
       }
       
-      this.touchStartY = y
+      console.log(`触摸移动，deltaY: ${deltaY}, 当前scrollY: ${this.scrollY}, 速度: ${this.velocity}`);
       return true
-    } else if (type === 'touchend' && this.isTouching) {
-      this.isTouching = false
-      
-      // 添加惯性滚动
-      if (Math.abs(this.velocity) > 0.1) {
-        this.startInertialScroll()
+    } else if (type === 'touchend' || type === 'touchcancel') {
+      if (this.isTouching) {
+        this.isTouching = false
+        
+        // 添加惯性滚动
+        if (Math.abs(this.velocity) > 0.1) {
+          this.startInertialScroll()
+        }
+        
+        console.log(`触摸结束，最终速度: ${this.velocity}`);
+        return true
       }
-      
-      return true
     }
     
     return false
@@ -537,6 +553,7 @@ export default class AchievementSystem {
     // 清除之前的惯性滚动
     if (this.inertialScrollId) {
       clearInterval(this.inertialScrollId)
+      this.inertialScrollId = null
     }
     
     // 设置初始速度和衰减因子
@@ -573,6 +590,9 @@ export default class AchievementSystem {
   showScreen() {
     this.isShowingScreen = true
     this.scrollY = 0 // 重置滚动位置
+    this.isTouching = false // 确保触摸状态被重置
+    this.velocity = 0 // 重置速度
+    this.debugRender = true // 允许下一次渲染时输出日志
     
     // 清除任何正在进行的惯性滚动
     if (this.inertialScrollId) {
@@ -583,6 +603,8 @@ export default class AchievementSystem {
     // 预先计算一些值以提高性能
     this.screenWidth = window.innerWidth
     this.screenHeight = window.innerHeight
+    
+    console.log('显示成就界面');
   }
   
   /**
@@ -611,11 +633,14 @@ export default class AchievementSystem {
   renderAchievementScreen(ctx) {
     if (!this.isShowingScreen) return
     
-    // 输出所有成就的当前状态，用于调试
-    console.log('渲染成就界面，当前成就状态:')
-    this.achievements.forEach(achievement => {
-      console.log(`${achievement.id}: 进度 ${achievement.progress}/${achievement.target}, 已解锁: ${achievement.unlocked}`)
-    })
+    // 只在首次渲染或调试时输出日志
+    if (this.debugRender) {
+      console.log('渲染成就界面，当前成就状态:')
+      this.achievements.forEach(achievement => {
+        console.log(`${achievement.id}: 进度 ${achievement.progress}/${achievement.target}, 已解锁: ${achievement.unlocked}`)
+      })
+      this.debugRender = false
+    }
     
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
@@ -905,36 +930,29 @@ export default class AchievementSystem {
    * @param {Number} y 起始y坐标
    * @param {Number} maxWidth 每行最大宽度
    * @param {Number} lineHeight 行高
-   * @param {Number} maxHeight 最大高度（可选）
+   * @param {Number} maxHeight 最大高度限制
    * @param {Boolean} center 是否居中显示（可选）
    */
   drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxHeight = Infinity, center = false) {
-    // 如果文本为空，直接返回
     if (!text) return;
     
-    // 将文本按字符分割
-    const chars = text.split('');
+    const words = text.split(' ');
     let line = '';
     let testLine = '';
     let lineY = y;
     let totalHeight = 0;
     
     // 逐字检查是否需要换行
-    for (let i = 0; i < chars.length; i++) {
-      testLine = line + chars[i];
+    for (let i = 0; i < words.length; i++) {
+      testLine = line + words[i] + ' ';
       const metrics = ctx.measureText(testLine);
       const testWidth = metrics.width;
       
       if (testWidth > maxWidth && i > 0) {
-        ctx.fillText(line, x, lineY);
-        line = chars[i];
-        lineY += lineHeight;
-        totalHeight += lineHeight;
-        
         // 检查是否超出最大高度
-        if (totalHeight + lineHeight > maxHeight) {
+        if ((lineY + lineHeight) > maxHeight) {
           // 如果下一行会超出最大高度，在当前行末尾添加省略号
-          if (i < chars.length - 1) {
+          if (i < words.length - 1) {
             // 回退到上一行的末尾位置
             lineY -= lineHeight;
             // 测量省略号的宽度
@@ -949,6 +967,11 @@ export default class AchievementSystem {
           }
           break;
         }
+        
+        ctx.fillText(line, x, lineY);
+        line = words[i] + ' ';
+        lineY += lineHeight;
+        totalHeight += lineHeight;
       } else {
         line = testLine;
       }
