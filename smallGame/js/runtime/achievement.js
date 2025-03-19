@@ -17,8 +17,19 @@ export default class AchievementSystem {
     this.isShowingScreen = false
     this.isShowingNotification = false
     this.notificationQueue = []
-    this.notificationDuration = 120 // 帧数
+    this.notificationDuration = 120 // 帧数，约2秒
     this.notificationTimer = 0
+    
+    // 成就通知动画相关
+    this.notificationAnimation = {
+      active: false,
+      startTime: 0,
+      duration: 500, // 动画持续时间（毫秒）
+      currentAchievement: null,
+      slideInComplete: false,
+      stayDuration: 2000, // 停留时间（毫秒）
+      slideOutComplete: false
+    }
     
     // 成就界面滚动相关
     this.scrollY = 0
@@ -301,7 +312,7 @@ export default class AchievementSystem {
     console.log(`成就 ${id} 进度更新: ${oldProgress} -> ${achievement.progress}/${achievement.target}`)
     
     // 检查是否达成
-    if (achievement.progress >= achievement.target) {
+    if (achievement.progress >= achievement.target && !achievement.unlocked) {
       achievement.progress = achievement.target
       achievement.unlocked = true
       
@@ -313,6 +324,17 @@ export default class AchievementSystem {
       // 如果当前没有显示通知，开始显示
       if (!this.isShowingNotification) {
         this.showNextNotification()
+      }
+      
+      // 播放成就解锁音效（如果有）
+      if (typeof wx.createInnerAudioContext === 'function') {
+        try {
+          const achievementSound = wx.createInnerAudioContext()
+          achievementSound.src = 'audio/achievement.mp3' // 假设有这个音效文件
+          achievementSound.play()
+        } catch (e) {
+          console.error('播放成就解锁音效失败', e)
+        }
       }
     }
     
@@ -326,30 +348,39 @@ export default class AchievementSystem {
   showNextNotification() {
     if (this.notificationQueue.length === 0) {
       this.isShowingNotification = false
+      this.notificationAnimation.active = false
       return
     }
     
     this.isShowingNotification = true
-    const achievement = this.notificationQueue.shift()
     
-    // 创建通知元素
-    if (typeof wx.createToast === 'function') {
-      wx.createToast({
-        title: `成就解锁：${achievement.name}`,
-        icon: 'success',
-        duration: 2000,
-        success: () => {
-          // 延迟显示下一个通知
-          setTimeout(() => {
-            this.showNextNotification()
-          }, 2500)
-        }
-      })
-    } else {
-      // 如果不支持原生toast，延迟显示下一个
-      setTimeout(() => {
-        this.showNextNotification()
-      }, 2000)
+    // 获取队列中的第一个成就，但不从队列中移除
+    const achievement = this.notificationQueue[0]
+    
+    // 设置动画状态
+    this.notificationAnimation = {
+      active: true,
+      startTime: Date.now(),
+      duration: 500, // 滑入动画持续时间（毫秒）
+      currentAchievement: achievement,
+      slideInComplete: false,
+      stayDuration: 2000, // 停留时间（毫秒）
+      slideOutComplete: false
+    }
+    
+    console.log(`显示成就通知: ${achievement.name}`)
+    
+    // 使用原生toast通知（如果支持）
+    if (typeof wx.showToast === 'function') {
+      try {
+        wx.showToast({
+          title: `成就解锁：${achievement.name}`,
+          icon: 'success',
+          duration: 2000
+        })
+      } catch (e) {
+        console.error('显示原生toast失败', e)
+      }
     }
   }
   
@@ -599,10 +630,6 @@ export default class AchievementSystem {
       clearInterval(this.inertialScrollId)
       this.inertialScrollId = null
     }
-    
-    // 预先计算一些值以提高性能
-    this.screenWidth = window.innerWidth
-    this.screenHeight = window.innerHeight
     
     console.log('显示成就界面');
   }
@@ -882,44 +909,186 @@ export default class AchievementSystem {
    */
   renderAchievementNotification(ctx) {
     // 如果当前没有显示通知，直接返回
-    if (!this.isShowingNotification || this.notificationQueue.length === 0) {
+    if (!this.isShowingNotification || !this.notificationAnimation.active) {
       return
     }
     
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
+    const animation = this.notificationAnimation
+    const currentTime = Date.now()
+    const elapsedTime = currentTime - animation.startTime
     
-    // 绘制通知背景
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
-    ctx.strokeStyle = '#ffcc00'
-    ctx.lineWidth = 2
+    // 通知框尺寸和位置
+    const notificationWidth = Math.min(screenWidth * 0.8, 300)
+    const notificationHeight = 80
+    const notificationX = (screenWidth - notificationWidth) / 2
+    let notificationY = 0
     
-    // 圆角矩形
-    const notificationWidth = screenWidth * 0.8
-    const notificationHeight = 60
-    const x = (screenWidth - notificationWidth) / 2
-    const y = 50
+    // 计算动画阶段
+    if (!animation.slideInComplete) {
+      // 滑入阶段
+      if (elapsedTime < animation.duration) {
+        // 计算滑入动画的Y位置（从屏幕上方滑入）
+        const progress = elapsedTime / animation.duration
+        notificationY = -notificationHeight + (notificationHeight + 20) * progress
+      } else {
+        // 滑入完成
+        notificationY = 20
+        animation.slideInComplete = true
+        animation.startTime = currentTime // 重置计时器，用于停留阶段
+      }
+    } else if (!animation.slideOutComplete) {
+      // 停留阶段
+      notificationY = 20
+      
+      if (elapsedTime > animation.stayDuration) {
+        // 停留时间结束，开始滑出
+        animation.slideOutComplete = true
+        animation.startTime = currentTime // 重置计时器，用于滑出阶段
+      }
+    } else {
+      // 滑出阶段
+      if (elapsedTime < animation.duration) {
+        // 计算滑出动画的Y位置（向屏幕上方滑出）
+        const progress = elapsedTime / animation.duration
+        notificationY = 20 - (notificationHeight + 20) * progress
+      } else {
+        // 滑出完成，移除当前通知并显示下一个
+        this.notificationQueue.shift() // 移除已显示的通知
+        
+        // 重置动画状态
+        this.notificationAnimation.active = false
+        
+        // 延迟一段时间后显示下一个通知
+        setTimeout(() => {
+          this.showNextNotification()
+        }, 500)
+        
+        return // 不再渲染当前通知
+      }
+    }
     
+    // 获取当前要显示的成就
+    const achievement = animation.currentAchievement
+    
+    // 绘制通知背景（带渐变和光晕效果）
+    ctx.save()
+    
+    // 创建圆角矩形路径
+    const radius = 10
     ctx.beginPath()
-    // 使用普通矩形代替圆角矩形
-    ctx.rect(x, y, notificationWidth, notificationHeight)
+    ctx.moveTo(notificationX + radius, notificationY)
+    ctx.lineTo(notificationX + notificationWidth - radius, notificationY)
+    ctx.quadraticCurveTo(notificationX + notificationWidth, notificationY, notificationX + notificationWidth, notificationY + radius)
+    ctx.lineTo(notificationX + notificationWidth, notificationY + notificationHeight - radius)
+    ctx.quadraticCurveTo(notificationX + notificationWidth, notificationY + notificationHeight, notificationX + notificationWidth - radius, notificationY + notificationHeight)
+    ctx.lineTo(notificationX + radius, notificationY + notificationHeight)
+    ctx.quadraticCurveTo(notificationX, notificationY + notificationHeight, notificationX, notificationY + notificationHeight - radius)
+    ctx.lineTo(notificationX, notificationY + radius)
+    ctx.quadraticCurveTo(notificationX, notificationY, notificationX + radius, notificationY)
+    ctx.closePath()
+    
+    // 创建背景渐变
+    const gradient = ctx.createLinearGradient(
+      notificationX, notificationY,
+      notificationX, notificationY + notificationHeight
+    )
+    gradient.addColorStop(0, 'rgba(50, 50, 50, 0.95)')
+    gradient.addColorStop(1, 'rgba(30, 30, 30, 0.95)')
+    
+    // 填充背景
+    ctx.fillStyle = gradient
     ctx.fill()
+    
+    // 添加金色边框
+    ctx.strokeStyle = '#FFD700'
+    ctx.lineWidth = 2
     ctx.stroke()
     
-    // 绘制成就图标
-    // 注意：这里假设成就图标已加载，实际使用时需要确保图标已加载
-    const currentAchievement = this.notificationQueue[0]
+    // 添加光晕效果
+    ctx.shadowColor = '#FFD700'
+    ctx.shadowBlur = 10
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
+    ctx.stroke()
+    
+    // 绘制成就图标（如果有）
+    const iconSize = 50
+    const iconX = notificationX + 15
+    const iconY = notificationY + (notificationHeight - iconSize) / 2
+    
+    // 绘制默认图标（奖杯形状）
+    ctx.fillStyle = '#FFD700'
+    ctx.beginPath()
+    // 简化的奖杯形状
+    ctx.arc(iconX + iconSize/2, iconY + iconSize/3, iconSize/3, 0, Math.PI * 2)
+    ctx.fill()
+    
+    ctx.fillStyle = '#FFD700'
+    ctx.fillRect(iconX + iconSize/3, iconY + iconSize/2, iconSize/3, iconSize/2)
+    
+    ctx.fillStyle = '#FFD700'
+    ctx.fillRect(iconX + iconSize/6, iconY + iconSize - 5, iconSize*2/3, 5)
+    
+    // 重置阴影
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
     
     // 绘制成就文本
-    ctx.fillStyle = '#ffffff'
-    ctx.font = '16px Arial'
-    ctx.textAlign = 'center'
-    ctx.fillText('成就解锁！', screenWidth / 2, y + 20)
+    const textX = iconX + iconSize + 10
+    const textWidth = notificationWidth - textX + notificationX - 10
     
-    ctx.font = '14px Arial'
-    // 绘制成就名称（居中显示，如果太长则截断）
-    const maxWidth = notificationWidth - 20
-    this.drawWrappedText(ctx, currentAchievement.name, screenWidth / 2, y + 40, maxWidth, 14, 20, true)
+    // 绘制"成就解锁"标题
+    ctx.fillStyle = '#FFD700'
+    ctx.font = 'bold 14px Arial'
+    ctx.textAlign = 'left'
+    ctx.fillText('成就解锁!', textX, notificationY + 25)
+    
+    // 绘制成就名称
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = '12px Arial'
+    this.drawWrappedText(
+      ctx,
+      achievement.name,
+      textX,
+      notificationY + 45,
+      textWidth,
+      16,
+      30
+    )
+    
+    // 恢复绘图状态
+    ctx.restore()
+    
+    // 添加闪烁效果
+    if (animation.slideInComplete && !animation.slideOutComplete) {
+      const flashInterval = 500 // 闪烁间隔（毫秒）
+      if ((currentTime % flashInterval) < flashInterval / 2) {
+        // 绘制闪烁光晕
+        ctx.save()
+        ctx.globalAlpha = 0.3
+        ctx.beginPath()
+        ctx.rect(notificationX, notificationY, notificationWidth, notificationHeight)
+        ctx.fillStyle = '#FFD700'
+        ctx.fill()
+        ctx.restore()
+      }
+    }
+  }
+  
+  /**
+   * 渲染方法，供游戏主循环调用
+   * @param {Object} ctx Canvas上下文
+   */
+  render(ctx) {
+    // 如果成就界面正在显示，则渲染成就界面
+    if (this.isShowingScreen) {
+      this.renderAchievementScreen(ctx)
+    }
+    
+    // 无论成就界面是否显示，都需要渲染成就通知（如果有）
+    this.renderAchievementNotification(ctx)
   }
   
   /**
