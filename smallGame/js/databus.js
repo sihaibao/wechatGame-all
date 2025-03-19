@@ -44,6 +44,7 @@ export default class DataBus {
     this.animations = []
     this.powerItems = []  
     this.gameOver   = false
+    this.gameOverTime = 0  // 游戏结束的时间戳
     
     // 广告奖励相关状态
     this.adRewardActive = false  // 是否有广告奖励激活
