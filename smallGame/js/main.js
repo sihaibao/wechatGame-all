@@ -186,7 +186,6 @@ export default class Main {
    * 触摸事件处理函数
    */
   touchEventHandler(e) {
-    console.log('触摸事件:', e.type);
     e.preventDefault()
 
     let x = 0, y = 0
@@ -198,19 +197,14 @@ export default class Main {
         y = e.touches[0].clientY
       }
     } else if (e.type === 'touchend' || e.type === 'touchcancel') {
-      console.log('touchend/touchcancel事件，changedTouches:', e.changedTouches && e.changedTouches.length);
       if (e.changedTouches && e.changedTouches.length > 0) {
         x = e.changedTouches[0].clientX
         y = e.changedTouches[0].clientY
       }
     }
-    
-    console.log('触摸坐标:', x, y);
 
     // 如果正在显示成就界面，优先处理成就界面的触摸事件
     if (this.showingAchievements && databus.achievementSystem) {
-      console.log('成就界面显示中，处理触摸事件');
-      
       // 检查是否点击了返回按钮
       if (e.type === 'touchstart' && databus.achievementSystem.backButtonArea) {
         const backButton = databus.achievementSystem.backButtonArea;
@@ -220,15 +214,7 @@ export default class Main {
           x >= backButton.startX && x <= backButton.endX && 
           y >= backButton.startY && y <= backButton.endY;
         
-        console.log('检查返回按钮区域:', 
-          'x:', x, 'y:', y, 
-          'buttonX:', backButton.startX, 'buttonY:', backButton.startY,
-          'buttonEndX:', backButton.endX, 'buttonEndY:', backButton.endY,
-          '是否在按钮内:', isInBackButton);
-        
         if (isInBackButton) {
-          console.log('点击在返回按钮区域内，执行返回操作');
-          
           // 隐藏成就界面
           this.showingAchievements = false;
           
@@ -243,7 +229,6 @@ export default class Main {
       
       // 将触摸事件传递给成就系统
       const handled = databus.achievementSystem.handleTouch(x, y, e.type)
-      console.log('成就系统处理结果:', handled);
       
       // 如果成就系统处理了触摸事件，则不再继续处理
       if (handled) {
@@ -258,24 +243,16 @@ export default class Main {
     if (databus.gameOver) {
       let area = this.gameinfo.btnArea
       
-      console.log('游戏结束状态，点击坐标:', x, y);
-      console.log('重新开始按钮区域:', area);
-      console.log('成就按钮区域:', this.gameinfo.achievementBtnArea);
-      
       // 重新开始按钮
       if (x >= area.startX
         && x <= area.endX
         && y >= area.startY
         && y <= area.endY) {
-        console.log('点击了重新开始按钮');
-        console.log('点击在重新开始按钮区域内: x范围', area.startX, '-', area.endX, 'y范围', area.startY, '-', area.endY);
         this.restart()
         
         // 播放按钮音效
         this.music.playShoot()
         return
-      } else {
-        console.log('点击不在重新开始按钮区域内: x范围', area.startX, '-', area.endX, 'y范围', area.startY, '-', area.endY);
       }
       
       // 检查是否点击了成就按钮
@@ -285,13 +262,7 @@ export default class Main {
           x >= achieveArea.startX && x <= achieveArea.endX && 
           y >= achieveArea.startY && y <= achieveArea.endY;
         
-        console.log('点击是否在成就按钮区域内:', isInAchieveArea, 
-          'x范围', achieveArea.startX, '-', achieveArea.endX, 
-          'y范围', achieveArea.startY, '-', achieveArea.endY);
-        
         if (isInAchieveArea) {
-          console.log('点击了成就按钮');
-          
           // 显示成就界面
           this.showingAchievements = true
           

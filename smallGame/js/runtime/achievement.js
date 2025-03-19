@@ -200,9 +200,6 @@ export default class AchievementSystem {
               unlocked: parsed[achievement.id].unlocked,
               progress: parsed[achievement.id].progress
             }
-            
-            // 输出日志，确认加载成功
-            console.log(`成就加载: ${achievement.id}, 进度: ${this.achievements[index].progress}/${achievement.target}, 已解锁: ${this.achievements[index].unlocked}`)
           }
         })
       } else {
@@ -225,9 +222,6 @@ export default class AchievementSystem {
           unlocked: achievement.unlocked,
           progress: achievement.progress
         }
-        
-        // 输出日志，确认保存的数据
-        console.log(`保存成就: ${achievement.id}, 进度: ${achievement.progress}/${achievement.target}, 已解锁: ${achievement.unlocked}`)
       })
       
       const jsonData = JSON.stringify(achievementsToSave)
@@ -288,11 +282,9 @@ export default class AchievementSystem {
     }
     
     const achievement = this.achievements[achievementIndex]
-    console.log(`更新成就: ${id}, 当前进度: ${achievement.progress}/${achievement.target}, 新增进度: ${progress}, 绝对值模式: ${absolute}`)
     
     // 如果已解锁，不再更新进度
     if (achievement.unlocked) {
-      console.log(`成就 ${id} 已解锁，不再更新进度`)
       return
     }
     
@@ -309,14 +301,10 @@ export default class AchievementSystem {
       achievement.progress = achievement.target
     }
     
-    console.log(`成就 ${id} 进度更新: ${oldProgress} -> ${achievement.progress}/${achievement.target}`)
-    
     // 检查是否达成
     if (achievement.progress >= achievement.target && !achievement.unlocked) {
       achievement.progress = achievement.target
       achievement.unlocked = true
-      
-      console.log(`成就 ${id} 已解锁!`)
       
       // 添加到通知队列
       this.notificationQueue.push(achievement)
@@ -368,8 +356,6 @@ export default class AchievementSystem {
       slideOutComplete: false
     }
     
-    console.log(`显示成就通知: ${achievement.name}`)
-    
     // 使用原生toast通知（如果支持）
     if (typeof wx.showToast === 'function') {
       try {
@@ -389,8 +375,6 @@ export default class AchievementSystem {
    * @param {Number} score 本局得分
    */
   recordGameEnd(score) {
-    console.log(`记录游戏结束，得分: ${score}，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
-    
     // 更新统计数据
     this.stats.totalGamesPlayed++
     
@@ -406,33 +390,27 @@ export default class AchievementSystem {
     
     // 检查分数相关成就
     if (score >= 100) {
-      console.log(`更新成就'score100'，当前分数: ${score}`)
       this.updateAchievement('score100', score, true)
     }
     
     if (score >= 500) {
-      console.log(`更新成就'score500'，当前分数: ${score}`)
       this.updateAchievement('score500', score, true)
     }
     
     if (score >= 1000) {
-      console.log(`更新成就'score1000'，当前分数: ${score}`)
       this.updateAchievement('score1000', score, true)
     }
     
     // 检查敌人击败数相关成就
     if (this.stats.currentGameEnemiesDefeated >= 10) {
-      console.log(`更新成就'enemy10'，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
       this.updateAchievement('enemy10', this.stats.currentGameEnemiesDefeated, true)
     }
     
     if (this.stats.currentGameEnemiesDefeated >= 50) {
-      console.log(`更新成就'enemy50'，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
       this.updateAchievement('enemy50', this.stats.currentGameEnemiesDefeated, true)
     }
     
     if (this.stats.currentGameEnemiesDefeated >= 100) {
-      console.log(`更新成就'enemy100'，当前击败敌人数: ${this.stats.currentGameEnemiesDefeated}`)
       this.updateAchievement('enemy100', this.stats.currentGameEnemiesDefeated, true)
     }
   }
@@ -450,8 +428,6 @@ export default class AchievementSystem {
    * @param {String} itemType 道具类型
    */
   recordItemCollected(itemType) {
-    console.log(`记录收集道具: ${itemType}, 当前总收集道具数: ${this.stats.totalItemsCollected}`)
-    
     this.stats.totalItemsCollected++
     
     // 更新道具收集成就
@@ -510,13 +486,10 @@ export default class AchievementSystem {
       return false
     }
     
-    console.log(`成就系统处理触摸事件: ${type}, 坐标: ${x}, ${y}`);
-    
     // 检查是否点击了返回按钮
     if (type === 'touchstart' && this.backButtonArea) {
       if (x >= this.backButtonArea.startX && x <= this.backButtonArea.endX &&
           y >= this.backButtonArea.startY && y <= this.backButtonArea.endY) {
-        console.log('点击了返回按钮区域，不处理滚动');
         return false; // 返回false，让main.js处理返回按钮点击
       }
     }
@@ -535,7 +508,6 @@ export default class AchievementSystem {
         this.inertialScrollId = null
       }
       
-      console.log(`触摸开始，初始Y坐标: ${y}`);
       return true
     } else if (type === 'touchmove' && this.isTouching) {
       const deltaY = y - this.lastTouchY
@@ -558,7 +530,6 @@ export default class AchievementSystem {
         this.scrollY = this.maxScrollY
       }
       
-      console.log(`触摸移动，deltaY: ${deltaY}, 当前scrollY: ${this.scrollY}, 速度: ${this.velocity}`);
       return true
     } else if (type === 'touchend' || type === 'touchcancel') {
       if (this.isTouching) {
@@ -569,7 +540,6 @@ export default class AchievementSystem {
           this.startInertialScroll()
         }
         
-        console.log(`触摸结束，最终速度: ${this.velocity}`);
         return true
       }
     }
@@ -630,8 +600,6 @@ export default class AchievementSystem {
       clearInterval(this.inertialScrollId)
       this.inertialScrollId = null
     }
-    
-    console.log('显示成就界面');
   }
   
   /**
@@ -659,15 +627,6 @@ export default class AchievementSystem {
    */
   renderAchievementScreen(ctx) {
     if (!this.isShowingScreen) return
-    
-    // 只在首次渲染或调试时输出日志
-    if (this.debugRender) {
-      console.log('渲染成就界面，当前成就状态:')
-      this.achievements.forEach(achievement => {
-        console.log(`${achievement.id}: 进度 ${achievement.progress}/${achievement.target}, 已解锁: ${achievement.unlocked}`)
-      })
-      this.debugRender = false
-    }
     
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
