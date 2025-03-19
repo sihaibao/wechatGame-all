@@ -363,10 +363,11 @@ export default class GameInfo {
       // 重新开始按钮文字 - 增大字体
       ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
       ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle' // 设置文字基线为中间，确保垂直居中
       ctx.fillText(
         '重新开始',
         screenWidth / 2,
-        screenHeight / 2 + 57 // 调整文字垂直位置，使其居中
+        screenHeight / 2 + 30 + restartButtonHeight / 2 // 精确计算垂直中心位置
       )
       
       // 更新重新开始按钮区域，确保与渲染位置一致
@@ -477,10 +478,12 @@ export default class GameInfo {
           
           // 复活按钮文字
           ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle' // 设置文字基线为中间，确保垂直居中
           ctx.fillText(
             '复活',
             screenWidth / 2,
-            buttonY + 19 // 调整文字垂直位置，使其居中
+            buttonY + reviveButtonHeight / 2 // 精确计算垂直中心位置
           )
           
           // 保存复活按钮区域
@@ -537,10 +540,12 @@ export default class GameInfo {
           
           // 特殊道具按钮文字
           ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle' // 设置文字基线为中间，确保垂直居中
           ctx.fillText(
             '特殊道具',
             screenWidth / 2,
-            buttonY + 19 // 调整文字垂直位置，使其居中
+            buttonY + specialItemButtonHeight / 2 // 精确计算垂直中心位置
           )
           
           // 保存特殊道具按钮区域
@@ -598,10 +603,11 @@ export default class GameInfo {
     
     ctx.fillStyle = '#ffffff'
     ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle' // 设置文字基线为中间，确保垂直居中
     ctx.fillText(
       text,
       screenWidth / 2,
-      y + 22 // 调整文字垂直位置，使其居中
+      y + buttonHeight / 2 // 精确计算垂直中心位置
     )
   }
   
