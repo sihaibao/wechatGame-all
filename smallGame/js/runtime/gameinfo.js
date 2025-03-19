@@ -351,14 +351,15 @@ export default class GameInfo {
   
       // 重新开始按钮背景 - 增加按钮大小和视觉效果
       ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
-      this.drawRoundRect(
-        ctx,
+      
+      // 使用普通矩形而不是圆角矩形
+      ctx.beginPath();
+      ctx.rect(
         screenWidth / 2 - 100,  // 增加宽度
         screenHeight / 2 + 20,
-        200, 60,  // 增加高度
-        [1]  // 增加圆角
-      )
-      ctx.fill()
+        200, 60  // 增加高度
+      );
+      ctx.fill();
       
       // 增强按钮发光效果
       ctx.shadowColor = `rgba(0, 200, 255, ${0.9 * elementsOpacity})`
@@ -388,14 +389,15 @@ export default class GameInfo {
       
       // 成就按钮背景
       ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
-      this.drawRoundRect(
-        ctx,
+      
+      // 使用普通矩形而不是圆角矩形
+      ctx.beginPath();
+      ctx.rect(
         screenWidth / 2 - 80,
         screenHeight / 2 + 90,
-        160, 50,
-        [5]
-      )
-      ctx.fill()
+        160, 50
+      );
+      ctx.fill();
       
       // 添加按钮发光效果
       ctx.shadowColor = `rgba(0, 200, 255, ${0.8 * elementsOpacity})`
