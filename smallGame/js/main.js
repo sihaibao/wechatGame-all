@@ -44,6 +44,14 @@ export default class Main {
       'touchstart',
       this.touchHandler
     )
+    canvas.removeEventListener(
+      'touchmove',
+      this.touchHandler
+    )
+    canvas.removeEventListener(
+      'touchend',
+      this.touchHandler
+    )
 
     this.bg = new BackGround(ctx)
     this.player = new Player(ctx)
@@ -174,29 +182,41 @@ export default class Main {
     }
   }
 
-  // 游戏结束后的触摸事件处理逻辑
+  /**
+   * 触摸事件处理逻辑
+   */
   touchEventHandler(e) {
     e.preventDefault()
 
-    let x = e.touches[0].clientX
-    let y = e.touches[0].clientY
+    const x = e.touches[0].clientX
+    const y = e.touches[0].clientY
 
-    // 如果正在显示成就界面
-    if (this.showingAchievements) {
-      // 检查是否点击了返回按钮
-      if (databus.achievementSystem && databus.achievementSystem.backButtonArea) {
-        const area = databus.achievementSystem.backButtonArea
-        if (x >= area.startX
-          && x <= area.endX
-          && y >= area.startY
-          && y <= area.endY) {
+    // 如果正在显示成就界面，优先处理成就界面的触摸事件
+    if (this.showingAchievements && databus.achievementSystem) {
+      // 将触摸事件传递给成就系统
+      const handled = databus.achievementSystem.handleTouch(x, y, e.type)
+      if (handled) {
+        // 如果成就系统处理了触摸事件，则不再继续处理
+        return
+      }
+      
+      // 如果成就系统没有处理触摸事件，则检查是否点击了返回按钮
+      if (e.type === 'touchstart' && databus.achievementSystem.backButtonArea) {
+        if (x >= databus.achievementSystem.backButtonArea.startX
+          && x <= databus.achievementSystem.backButtonArea.endX
+          && y >= databus.achievementSystem.backButtonArea.startY
+          && y <= databus.achievementSystem.backButtonArea.endY) {
+          
           // 隐藏成就界面
           this.showingAchievements = false
           
           // 播放按钮音效
           this.music.playShoot()
+          return
         }
       }
+      
+      // 如果在成就界面但没有点击任何按钮，则不再继续处理
       return
     }
 
@@ -225,6 +245,11 @@ export default class Main {
           
           // 显示成就界面
           this.showingAchievements = true
+          
+          // 使用成就系统的showScreen方法
+          if (databus.achievementSystem) {
+            databus.achievementSystem.showScreen()
+          }
           
           // 播放按钮音效
           this.music.playShoot()
@@ -400,6 +425,8 @@ export default class Main {
         this.hasEventBind = true
         this.touchHandler = this.touchEventHandler.bind(this)
         canvas.addEventListener('touchstart', this.touchHandler)
+        canvas.addEventListener('touchmove', this.touchHandler)
+        canvas.addEventListener('touchend', this.touchHandler)
       }
     } else {
       // 正常游戏中
