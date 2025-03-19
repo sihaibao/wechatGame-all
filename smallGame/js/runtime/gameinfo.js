@@ -62,6 +62,17 @@ export default class GameInfo {
       screenWidth - 10,
       30
     )
+    
+    // 如果启用了关卡系统，显示当前关卡（移到右上角，在最高分下面）
+    if (Config.levels && Config.levels.enabled) {
+      const currentLevel = databus.getCurrentLevel()
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(
+        `关卡: ${currentLevel.name}`,
+        screenWidth - 10,
+        60
+      )
+    }
     ctx.textAlign = 'left'
     
     // 如果激活了双倍得分，显示双倍得分提示
@@ -71,17 +82,6 @@ export default class GameInfo {
         '双倍得分!',
         10,
         90
-      )
-    }
-    
-    // 如果启用了关卡系统，显示当前关卡
-    if (Config.levels && Config.levels.enabled) {
-      const currentLevel = databus.getCurrentLevel()
-      ctx.fillStyle = '#ffffff'
-      ctx.fillText(
-        `关卡: ${currentLevel.name}`,
-        10,
-        doubleScoreActive ? 120 : 90
       )
     }
     
