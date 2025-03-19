@@ -12,8 +12,8 @@ const PLAYER_HEIGHT  = 43   // 256/6 让飞机更小
 
 // 护盾相关常量
 const SHIELD_IMG_SRC = 'images/shield-effect.png'
-const SHIELD_WIDTH   = 100
-const SHIELD_HEIGHT  = 100
+const SHIELD_WIDTH   = 80   // 减小护盾宽度
+const SHIELD_HEIGHT  = 60   // 减小护盾高度
 
 let databus = new DataBus()
 
@@ -40,6 +40,17 @@ export default class Player extends Sprite {
     // 护盾特效图片
     this.shieldImg = new Image()
     this.shieldImg.src = SHIELD_IMG_SRC
+
+    // 创建护盾精灵对象
+    this.shield = {
+      img: new Image(),
+      width: SHIELD_WIDTH,
+      height: SHIELD_HEIGHT,
+      x: 0,
+      y: 0,
+      visible: false
+    }
+    this.shield.img.src = SHIELD_IMG_SRC
 
     // 初始化事件监听
     this.initEvent()
@@ -174,6 +185,8 @@ export default class Player extends Sprite {
         // 激活护盾
         this.hasShield = true
         this.shieldTime = powerItem.duration
+        // 立即更新护盾位置
+        this.updateShieldPosition()
         break
         
       case 'bomb':
@@ -199,6 +212,20 @@ export default class Player extends Sprite {
       if (this.shieldTime <= 0) {
         this.hasShield = false
       }
+    }
+  }
+
+  /**
+   * 更新护盾位置
+   */
+  updateShieldPosition() {
+    if (this.hasShield) {
+      // 调整护盾位置，使其居中在飞机周围
+      this.shield.x = this.x - (this.shield.width - this.width) / 2
+      this.shield.y = this.y - (this.shield.height - this.height) / 2
+      this.shield.visible = true
+    } else {
+      this.shield.visible = false
     }
   }
 
@@ -243,6 +270,17 @@ export default class Player extends Sprite {
   }
 
   /**
+   * 更新玩家状态
+   */
+  update() {
+    // 更新护盾状态
+    this.updatePowerStatus()
+    
+    // 更新护盾位置
+    this.updateShieldPosition()
+  }
+
+  /**
    * 绘制到画布上
    */
   drawToCanvas(ctx) {
@@ -259,13 +297,13 @@ export default class Player extends Sprite {
     )
 
     // 如果有护盾，绘制护盾效果
-    if (this.hasShield) {
+    if (this.hasShield && this.shield.visible) {
       ctx.drawImage(
-        this.shieldImg,
-        this.x - (SHIELD_WIDTH - this.width) / 2,
-        this.y - (SHIELD_HEIGHT - this.height) / 2,
-        SHIELD_WIDTH,
-        SHIELD_HEIGHT
+        this.shield.img,
+        this.shield.x,
+        this.shield.y,
+        this.shield.width,
+        this.shield.height
       )
     }
   }

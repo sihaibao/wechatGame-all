@@ -395,12 +395,13 @@ export default class Main {
   // 游戏逻辑更新主函数
   update() {
     if (databus.gameOver)
-      return;
+      return
 
+    // 更新背景
     this.bg.update()
-
-    // 更新玩家的道具状态（护盾等）
-    this.player.updatePowerStatus()
+    
+    // 更新玩家状态
+    this.player.update()
 
     databus.bullets
       .concat(databus.enemys)
