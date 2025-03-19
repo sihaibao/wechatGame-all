@@ -17,10 +17,10 @@ gameOverBg.src = 'images/bg.jpg'
 export default class GameInfo {
   constructor() {
     this.btnArea = {
-      startX: screenWidth / 2 - 80,
+      startX: screenWidth / 2 - 100,
       startY: screenHeight / 2 + 20,
-      endX  : screenWidth / 2 + 80,
-      endY  : screenHeight / 2 + 70
+      endX  : screenWidth / 2 + 100,
+      endY  : screenHeight / 2 + 80
     }
     
     // 成就按钮区域
@@ -349,41 +349,41 @@ export default class GameInfo {
         screenHeight / 2
       )
   
-      // 重新开始按钮背景
+      // 重新开始按钮背景 - 增加按钮大小和视觉效果
       ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
       this.drawRoundRect(
         ctx,
-        screenWidth / 2 - 80,
+        screenWidth / 2 - 100,  // 增加宽度
         screenHeight / 2 + 20,
-        160, 50,
-        [5]
+        200, 60,  // 增加高度
+        [1]  // 增加圆角
       )
       ctx.fill()
       
-      // 添加按钮发光效果
-      ctx.shadowColor = `rgba(0, 200, 255, ${0.8 * elementsOpacity})`
-      ctx.shadowBlur = 10
-      ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
-      ctx.lineWidth = 2
+      // 增强按钮发光效果
+      ctx.shadowColor = `rgba(0, 200, 255, ${0.9 * elementsOpacity})`
+      ctx.shadowBlur = 15
+      ctx.strokeStyle = `rgba(255, 255, 255, ${1.0 * elementsOpacity})`
+      ctx.lineWidth = 3
       ctx.stroke()
       ctx.shadowBlur = 0
   
-      // 重新开始按钮文字
+      // 重新开始按钮文字 - 增大字体
       ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
-      ctx.font = 'bold 22px Arial'
+      ctx.font = 'bold 26px Arial'
       ctx.textAlign = 'center'
       ctx.fillText(
         '重新开始',
         screenWidth / 2,
-        screenHeight / 2 + 50
+        screenHeight / 2 + 55
       )
       
-      // 更新重新开始按钮区域，确保与渲染位置一致
+      // 更新重新开始按钮区域，确保与渲染位置一致 - 扩大点击区域
       this.btnArea = {
-        startX: screenWidth / 2 - 80,
+        startX: screenWidth / 2 - 100,
         startY: screenHeight / 2 + 20,
-        endX  : screenWidth / 2 + 80,
-        endY  : screenHeight / 2 + 70
+        endX  : screenWidth / 2 + 100,
+        endY  : screenHeight / 2 + 80
       }
       
       // 成就按钮背景
