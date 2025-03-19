@@ -35,11 +35,13 @@ export default class Main {
   }
 
   restart() {
+    // 重置游戏状态
     databus.reset()
     
     // 重置广告管理器状态
     this.adManager.reset()
 
+    // 移除所有事件监听器
     canvas.removeEventListener(
       'touchstart',
       this.touchHandler
@@ -53,11 +55,21 @@ export default class Main {
       this.touchHandler
     )
 
+    // 清除画布，确保没有残留的边框或其他元素
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // 重置所有绘图状态
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    
+    // 重新创建游戏对象，确保背景图片正确加载
     this.bg = new BackGround(ctx)
     this.player = new Player(ctx)
     this.gameinfo = new GameInfo()
     this.music = new Music()
 
+    // 重置游戏动画状态
+    this.gameinfo.gameOverAnimationActive = false
+    
     this.bindLoop = this.loop.bind(this)
     this.hasEventBind = false
 
@@ -422,8 +434,13 @@ export default class Main {
 
   // 游戏画面渲染函数
   render() {
+    // 完全清除画布，确保没有残留的边框或其他元素
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
+    // 重置所有绘图状态
+    ctx.save()
+    
+    // 绘制背景
     this.bg.render(ctx)
 
     // 只在游戏未结束时渲染敌机、子弹和道具
@@ -489,5 +506,8 @@ export default class Main {
         databus.achievementSystem) {
       databus.achievementSystem.renderAchievementNotification(ctx)
     }
+    
+    // 恢复绘图状态
+    ctx.restore()
   }
 }

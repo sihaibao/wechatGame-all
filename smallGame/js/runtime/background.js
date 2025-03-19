@@ -15,6 +15,13 @@ export default class BackGround extends Sprite {
   constructor(ctx) {
     super(BG_IMG_SRC, BG_WIDTH, BG_HEIGHT)
 
+    // 确保图片加载完成
+    this.img.onload = () => {
+      console.log('游戏背景图片加载完成')
+      this.render(ctx)
+    }
+
+    // 初始渲染
     this.render(ctx)
 
     this.top = 0
@@ -34,6 +41,8 @@ export default class BackGround extends Sprite {
    * 第二张补全除了top高度之外的部分，其余的隐藏在屏幕下面
    */
   render(ctx) {
+    ctx.save();
+    
     ctx.drawImage(
       this.img,
       0,
@@ -57,5 +66,7 @@ export default class BackGround extends Sprite {
       screenWidth,
       screenHeight
     )
+    
+    ctx.restore();
   }
 }

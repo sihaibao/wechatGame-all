@@ -14,6 +14,11 @@ let databus = new DataBus()
 let gameOverBg = new Image()
 gameOverBg.src = 'images/bg.jpg'
 
+// 确保背景图片加载完成
+gameOverBg.onload = function() {
+  console.log('游戏结束背景图片加载完成')
+}
+
 export default class GameInfo {
   constructor() {
     this.btnArea = {
@@ -186,7 +191,7 @@ export default class GameInfo {
       const bgX = screenWidth / 2 - scaledWidth / 2
       const bgY = screenHeight / 2 - scaledHeight / 2
       
-      // 绘制背景图片
+      // 绘制背景图片 - 直接绘制，不使用圆角矩形
       ctx.drawImage(
         gameOverBg,
         bgX,
@@ -195,47 +200,33 @@ export default class GameInfo {
         scaledHeight
       )
       
-      // 添加半透明遮罩，使文字更清晰
+      // 添加半透明遮罩，使文字更清晰，但不添加边框
       ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * easeOutProgress})`
-      this.drawRoundRect(
-        ctx,
+      ctx.fillRect(
         bgX,
         bgY,
         scaledWidth,
-        scaledHeight,
-        [10]
+        scaledHeight
       )
-      ctx.fill()
     } catch (e) {
       console.error('Failed to draw game over background:', e)
       
       // 如果背景图片加载失败，回退到原来的背景
       ctx.fillStyle = 'rgba(0, 100, 150, 0.8)'
-      this.drawRoundRect(
-        ctx,
+      ctx.fillRect(
         screenWidth / 2 - 150,
         screenHeight / 2 - 200,
-        300, 400,
-        [10]
+        300, 400
       )
-      ctx.fill()
       
       // 绘制内部背景框
       ctx.fillStyle = 'rgba(100, 200, 255, 0.3)'
-      this.drawRoundRect(
-        ctx,
+      ctx.fillRect(
         screenWidth / 2 - 130,
         screenHeight / 2 - 180,
-        260, 360,
-        [8]
+        260, 360
       )
-      ctx.fill()
     }
-    
-    // 绘制边框
-    ctx.strokeStyle = `rgba(255, 255, 255, ${0.7 * easeOutProgress})`
-    ctx.lineWidth = 2
-    ctx.stroke()
     
     // 元素只有在动画进行到一定程度才显示 (50%)
     if (easeOutProgress > 0.5) {
@@ -244,24 +235,29 @@ export default class GameInfo {
       
       // 绘制游戏结束标题背景
       ctx.fillStyle = `rgba(50, 0, 0, ${0.8 * elementsOpacity})`  // 深红色背景
-      this.drawRoundRect(
-        ctx,
+      ctx.fillRect(
         screenWidth / 2 - 80,
         screenHeight / 2 - 180,
-        160, 50,
-        [5]
+        160, 50
       )
-      ctx.fill()
       
       // 添加游戏结束标题边框效果
       ctx.strokeStyle = `rgba(255, 50, 50, ${0.9 * elementsOpacity})`  // 红色边框
       ctx.lineWidth = 3
-      ctx.stroke()
+      ctx.strokeRect(
+        screenWidth / 2 - 80,
+        screenHeight / 2 - 180,
+        160, 50
+      )
       
       // 添加发光效果
       ctx.shadowColor = `rgba(255, 0, 0, ${0.8 * elementsOpacity})`  // 更鲜艳的红色光晕
       ctx.shadowBlur = 12
-      ctx.stroke()
+      ctx.strokeRect(
+        screenWidth / 2 - 80,
+        screenHeight / 2 - 180,
+        160, 50
+      )
       ctx.shadowBlur = 0
       
       // 绘制游戏结束文字
@@ -297,19 +293,20 @@ export default class GameInfo {
   
       // 绘制分数背景
       ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * elementsOpacity})`
-      this.drawRoundRect(
-        ctx,
+      ctx.fillRect(
         screenWidth / 2 - 100,
         screenHeight / 2 - 100,
-        200, 100,
-        [5]
+        200, 100
       )
-      ctx.fill()
       
       // 添加分数区域边框
       ctx.strokeStyle = `rgba(255, 215, 0, ${0.8 * elementsOpacity})`  // 金色边框
       ctx.lineWidth = 2
-      ctx.stroke()
+      ctx.strokeRect(
+        screenWidth / 2 - 100,
+        screenHeight / 2 - 100,
+        200, 100
+      )
   
       // 得分和最高分居中显示
       // 得分标题
@@ -353,20 +350,22 @@ export default class GameInfo {
       ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
       
       // 使用普通矩形而不是圆角矩形
-      ctx.beginPath();
-      ctx.rect(
+      ctx.fillRect(
         screenWidth / 2 - 100,  // 增加宽度
         screenHeight / 2 + 20,
         200, 60  // 增加高度
       );
-      ctx.fill();
       
       // 增强按钮发光效果
       ctx.shadowColor = `rgba(0, 200, 255, ${0.9 * elementsOpacity})`
       ctx.shadowBlur = 15
       ctx.strokeStyle = `rgba(255, 255, 255, ${1.0 * elementsOpacity})`
       ctx.lineWidth = 3
-      ctx.stroke()
+      ctx.strokeRect(
+        screenWidth / 2 - 100,  // 增加宽度
+        screenHeight / 2 + 20,
+        200, 60  // 增加高度
+      );
       ctx.shadowBlur = 0
   
       // 重新开始按钮文字 - 增大字体
@@ -391,20 +390,22 @@ export default class GameInfo {
       ctx.fillStyle = `rgba(0, 120, 180, ${0.9 * elementsOpacity})`
       
       // 使用普通矩形而不是圆角矩形
-      ctx.beginPath();
-      ctx.rect(
+      ctx.fillRect(
         screenWidth / 2 - 80,
         screenHeight / 2 + 90,
         160, 50
       );
-      ctx.fill();
       
       // 添加按钮发光效果
       ctx.shadowColor = `rgba(0, 200, 255, ${0.8 * elementsOpacity})`
       ctx.shadowBlur = 10
       ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
       ctx.lineWidth = 2
-      ctx.stroke()
+      ctx.strokeRect(
+        screenWidth / 2 - 80,
+        screenHeight / 2 + 90,
+        160, 50
+      );
       ctx.shadowBlur = 0
       
       // 成就按钮文字
@@ -432,21 +433,22 @@ export default class GameInfo {
         if (adsConfig.revive.enabled && adManager.canShowReviveAd()) {
           // 复活按钮背景
           ctx.fillStyle = `rgba(255, 150, 0, ${0.9 * elementsOpacity})`
-          this.drawRoundRect(
-            ctx,
+          ctx.fillRect(
             screenWidth / 2 - 80,
             buttonY,
-            160, 50,
-            [5]
-          )
-          ctx.fill()
+            160, 50
+          );
           
           // 添加按钮发光效果
           ctx.shadowColor = `rgba(255, 200, 0, ${0.8 * elementsOpacity})`
           ctx.shadowBlur = 10
           ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
           ctx.lineWidth = 2
-          ctx.stroke()
+          ctx.strokeRect(
+            screenWidth / 2 - 80,
+            buttonY,
+            160, 50
+          );
           ctx.shadowBlur = 0
           
           // 复活按钮文字
@@ -475,21 +477,22 @@ export default class GameInfo {
         if (adsConfig.specialItem.enabled && adManager.canShowSpecialItemAd()) {
           // 特殊道具按钮背景
           ctx.fillStyle = `rgba(33, 150, 243, ${0.9 * elementsOpacity})`
-          this.drawRoundRect(
-            ctx,
+          ctx.fillRect(
             screenWidth / 2 - 80,
             buttonY,
-            160, 50,
-            [5]
-          )
-          ctx.fill()
+            160, 50
+          );
           
           // 添加按钮发光效果
           ctx.shadowColor = `rgba(100, 200, 255, ${0.8 * elementsOpacity})`
           ctx.shadowBlur = 10
           ctx.strokeStyle = `rgba(255, 255, 255, ${0.9 * elementsOpacity})`
           ctx.lineWidth = 2
-          ctx.stroke()
+          ctx.strokeRect(
+            screenWidth / 2 - 80,
+            buttonY,
+            160, 50
+          );
           ctx.shadowBlur = 0
           
           // 特殊道具按钮文字
@@ -527,15 +530,16 @@ export default class GameInfo {
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
     
-    this.drawRoundRect(
-      ctx,
+    ctx.fillRect(
       screenWidth / 2 - 60,
       y,
-      120, 40,
-      [5]
-    )
-    ctx.fill()
-    ctx.stroke()
+      120, 40
+    );
+    ctx.strokeRect(
+      screenWidth / 2 - 60,
+      y,
+      120, 40
+    );
     
     ctx.fillStyle = '#ffffff'
     ctx.font = '20px Arial'
