@@ -55,12 +55,14 @@ export default class GameInfo {
       30
     )
     
-    // 绘制最高分
+    // 绘制最高分（移到右上角）
+    ctx.textAlign = 'right'
     ctx.fillText(
       `最高分: ${highScore}`,
-      10,
-      60
+      screenWidth - 10,
+      30
     )
+    ctx.textAlign = 'left'
     
     // 如果激活了双倍得分，显示双倍得分提示
     if (doubleScoreActive) {
