@@ -557,6 +557,12 @@ export default class AchievementSystem {
       clearInterval(this.inertialScrollId)
       this.inertialScrollId = null
     }
+    
+    // 恢复默认文本对齐方式
+    const ctx = window.canvas.getContext('2d')
+    if (ctx) {
+      ctx.textAlign = 'left'
+    }
   }
   
   /**

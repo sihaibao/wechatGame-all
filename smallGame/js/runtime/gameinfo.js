@@ -148,6 +148,7 @@ export default class GameInfo {
 
     ctx.fillStyle = '#ffffff'
     ctx.font    = '20px Arial'
+    ctx.textAlign = 'left'  // 确保文本左对齐
 
     ctx.fillText(
       '游戏结束',
