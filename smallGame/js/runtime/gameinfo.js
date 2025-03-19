@@ -416,10 +416,12 @@ export default class GameInfo {
       
       // 成就按钮文字
       ctx.fillStyle = `rgba(255, 255, 255, ${elementsOpacity})`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle' // 设置文字基线为中间，确保垂直居中
       ctx.fillText(
         '成就',
         screenWidth / 2,
-        screenHeight / 2 + 107 // 调整文字垂直位置，使其居中
+        screenHeight / 2 + 90 + achievementButtonHeight / 2 // 精确计算垂直中心位置
       )
       
       // 更新成就按钮区域，确保与渲染位置一致
