@@ -16,15 +16,15 @@ export default class GameInfo {
       startX: screenWidth / 2 - 40,
       startY: screenHeight / 2 - 100 + 180,
       endX  : screenWidth / 2  + 50,
-      endY  : screenHeight / 2 - 100 + 255
+      endY  : screenHeight / 2 - 100 + 220  // 减小重新开始按钮的高度范围
     }
     
     // 成就按钮区域
     this.achievementBtnArea = {
-      startX: screenWidth / 2 - 40,
-      startY: screenHeight / 2 - 100 + 270,
-      endX  : screenWidth / 2  + 50,
-      endY  : screenHeight / 2 - 100 + 345
+      startX: screenWidth / 2 - 60,
+      startY: screenHeight / 2 - 100 + 230,
+      endX  : screenWidth / 2 + 60,
+      endY  : screenHeight / 2 - 100 + 270
     }
     
     // 复活按钮区域
@@ -181,15 +181,31 @@ export default class GameInfo {
       screenHeight / 2 - 100 + 205
     )
     
+    // 更新重新开始按钮区域，确保与渲染位置一致
+    this.btnArea = {
+      startX: screenWidth / 2 - 60,
+      startY: screenHeight / 2 - 100 + 180,
+      endX  : screenWidth / 2 + 60,
+      endY  : screenHeight / 2 - 100 + 220
+    }
+    
     // 绘制成就按钮
     ctx.fillStyle = '#4CAF50'
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = 2
     
+    // 更新成就按钮区域，确保与渲染位置一致
+    this.achievementBtnArea = {
+      startX: screenWidth / 2 - 60,
+      startY: screenHeight / 2 - 100 + 230,
+      endX  : screenWidth / 2 + 60,
+      endY  : screenHeight / 2 - 100 + 270
+    }
+    
     this.drawRoundRect(
       ctx,
       screenWidth / 2 - 60,
-      screenHeight / 2 - 100 + 270,
+      screenHeight / 2 - 100 + 230,
       120, 40,
       [5]
     )
@@ -200,12 +216,12 @@ export default class GameInfo {
     ctx.fillText(
       '成就',
       screenWidth / 2 - 20,
-      screenHeight / 2 - 100 + 295
+      screenHeight / 2 - 100 + 255
     )
     
     // 如果启用了广告，绘制广告按钮
     if (adsConfig) {
-      let buttonY = screenHeight / 2 - 100 + 330
+      let buttonY = screenHeight / 2 - 100 + 290
       
       // 绘制复活按钮
       if (adsConfig.revive.enabled && adManager.canShowReviveAd()) {

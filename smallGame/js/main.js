@@ -257,24 +257,39 @@ export default class Main {
     if (databus.gameOver) {
       let area = this.gameinfo.btnArea
       
+      console.log('游戏结束状态，点击坐标:', x, y);
+      console.log('重新开始按钮区域:', area);
+      console.log('成就按钮区域:', this.gameinfo.achievementBtnArea);
+      
       // 重新开始按钮
       if (x >= area.startX
         && x <= area.endX
         && y >= area.startY
         && y <= area.endY) {
+        console.log('点击了重新开始按钮');
+        console.log('点击在重新开始按钮区域内: x范围', area.startX, '-', area.endX, 'y范围', area.startY, '-', area.endY);
         this.restart()
         
         // 播放按钮音效
         this.music.playShoot()
         return
+      } else {
+        console.log('点击不在重新开始按钮区域内: x范围', area.startX, '-', area.endX, 'y范围', area.startY, '-', area.endY);
       }
       
       // 检查是否点击了成就按钮
       if (this.gameinfo.achievementBtnArea) {
-        if (x >= this.gameinfo.achievementBtnArea.startX
-          && x <= this.gameinfo.achievementBtnArea.endX
-          && y >= this.gameinfo.achievementBtnArea.startY
-          && y <= this.gameinfo.achievementBtnArea.endY) {
+        const achieveArea = this.gameinfo.achievementBtnArea;
+        const isInAchieveArea = 
+          x >= achieveArea.startX && x <= achieveArea.endX && 
+          y >= achieveArea.startY && y <= achieveArea.endY;
+        
+        console.log('点击是否在成就按钮区域内:', isInAchieveArea, 
+          'x范围', achieveArea.startX, '-', achieveArea.endX, 
+          'y范围', achieveArea.startY, '-', achieveArea.endY);
+        
+        if (isInAchieveArea) {
+          console.log('点击了成就按钮');
           
           // 显示成就界面
           this.showingAchievements = true
