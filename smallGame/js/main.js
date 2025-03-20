@@ -4,6 +4,15 @@ import BackGround from './runtime/background'
 import GameInfo from './runtime/gameinfo'
 import Music from './runtime/music'
 import DataBus from './databus'
+// 导入道具类
+import Weapon from './power/weapon'
+import Shield from './power/shield'
+import Bomb from './power/bomb'
+import SuperBomb from './power/superBomb'
+// 导入广告管理器
+import AdManager from './runtime/adManager'
+// 导入配置
+import Config from './config'
 
 let ctx = canvas.getContext('2d')
 let databus = new DataBus()
@@ -16,22 +25,51 @@ export default class Main {
     // 维护当前requestAnimationFrame的id
     this.aniId = 0
 
+    // 初始化广告管理器
+    this.adManager = new AdManager()
+    
+    // 成就界面显示状态
+    this.showingAchievements = false
+
     this.restart()
   }
 
   restart() {
+    // 重置游戏状态
     databus.reset()
+    
+    // 重置广告管理器状态
+    this.adManager.reset()
 
+    // 移除所有事件监听器
     canvas.removeEventListener(
       'touchstart',
       this.touchHandler
     )
+    canvas.removeEventListener(
+      'touchmove',
+      this.touchHandler
+    )
+    canvas.removeEventListener(
+      'touchend',
+      this.touchHandler
+    )
 
+    // 清除画布，确保没有残留的边框或其他元素
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    
+    // 重置所有绘图状态
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    
+    // 重新创建游戏对象，确保背景图片正确加载
     this.bg = new BackGround(ctx)
     this.player = new Player(ctx)
     this.gameinfo = new GameInfo()
     this.music = new Music()
 
+    // 重置游戏动画状态
+    this.gameinfo.gameOverAnimationActive = false
+    
     this.bindLoop = this.loop.bind(this)
     this.hasEventBind = false
 
@@ -49,10 +87,42 @@ export default class Main {
    * 帧数取模定义成生成的频率
    */
   enemyGenerate() {
-    if (databus.frame % 30 === 0) {
+    // 获取当前关卡配置
+    const currentLevel = databus.getCurrentLevel()
+    
+    if (databus.frame % currentLevel.enemySpawnRate === 0) {
       let enemy = databus.pool.getItemByClass('enemy', Enemy)
-      enemy.init(6)
+      enemy.init(currentLevel.enemySpeed)
       databus.enemys.push(enemy)
+    }
+  }
+
+  /**
+   * 随着帧数变化的道具生成逻辑
+   * 帧数取模定义成生成的频率
+   */
+  powerItemGenerate() {
+    // 获取当前关卡配置
+    const currentLevel = databus.getCurrentLevel()
+    
+    // 根据当前关卡配置决定道具生成频率
+    if (databus.frame % currentLevel.powerItemSpawnRate === 0) {
+      // 随机决定生成哪种道具
+      const random = Math.random()
+      let powerItem
+      
+      if (random < 0.5) {
+        // 50%概率生成武器升级
+        powerItem = databus.pool.getItemByClass('weapon', Weapon)
+      } else if (random < 0.8) {
+        // 30%概率生成护盾
+        powerItem = databus.pool.getItemByClass('shield', Shield)
+      } else {
+        // 20%概率生成炸弹
+        powerItem = databus.pool.getItemByClass('bomb', Bomb)
+      }
+      
+      databus.powerItems.push(powerItem)
     }
   }
 
@@ -69,91 +139,277 @@ export default class Main {
           that.music.playExplosion()
 
           bullet.visible = false
-          databus.score += 1
+          
+          // 使用新的加分方法，考虑广告奖励的得分倍率
+          const pointsGained = databus.addScore(1)
+          
+          // 记录击败敌人
+          databus.recordEnemyDefeated()
+          
+          // 如果有双倍得分，显示特效
+          if (pointsGained > 1) {
+            // 这里可以添加双倍得分的特效
+          }
 
           break
         }
       }
     })
 
+    // 道具与玩家的碰撞检测
+    for (let i = 0; i < databus.powerItems.length; i++) {
+      let powerItem = databus.powerItems[i]
+      
+      if (powerItem.isCollideWith(this.player)) {
+        // 播放获得道具的音效
+        that.music.playShoot()
+        
+        // 应用道具效果
+        this.player.applyPowerItem(powerItem)
+        
+        // 记录收集道具
+        databus.recordItemCollected(powerItem.type)
+        
+        // 设置道具为不可见
+        powerItem.visible = false
+        
+        // 从数组中移除道具
+        databus.powerItems.splice(i, 1)
+        i--
+      }
+    }
+
+    // 检测玩家与敌人碰撞
     for (let i = 0, il = databus.enemys.length; i < il; i++) {
       let enemy = databus.enemys[i]
 
       if (this.player.isCollideWith(enemy)) {
         databus.gameOver = true
+        
+        // 记录游戏结束时间戳
+        databus.gameOverTime = Date.now()
+        
+        // 游戏结束时记录游戏结束
+        databus.recordGameEnd()
+        
+        // 清除所有游戏元素和动画，避免游戏结束后仍然显示
+        databus.clearAllElements()
 
         break
       }
     }
   }
 
-  // 游戏结束后的触摸事件处理逻辑
+  /**
+   * 触摸事件处理函数
+   */
   touchEventHandler(e) {
     e.preventDefault()
 
-    let x = e.touches[0].clientX
-    let y = e.touches[0].clientY
+    let x = 0, y = 0
+    
+    // 根据事件类型获取触摸坐标
+    if (e.type === 'touchstart' || e.type === 'touchmove') {
+      if (e.touches && e.touches.length > 0) {
+        x = e.touches[0].clientX
+        y = e.touches[0].clientY
+      }
+    } else if (e.type === 'touchend' || e.type === 'touchcancel') {
+      if (e.changedTouches && e.changedTouches.length > 0) {
+        x = e.changedTouches[0].clientX
+        y = e.changedTouches[0].clientY
+      }
+    }
 
-    let area = this.gameinfo.btnArea
+    // 如果正在显示成就界面，优先处理成就界面的触摸事件
+    if (this.showingAchievements && databus.achievementSystem) {
+      // 检查是否点击了返回按钮
+      if (e.type === 'touchstart' && databus.achievementSystem.backButtonArea) {
+        const backButton = databus.achievementSystem.backButtonArea;
+        
+        // 检查触摸位置是否在返回按钮区域内
+        const isInBackButton = 
+          x >= backButton.startX && x <= backButton.endX && 
+          y >= backButton.startY && y <= backButton.endY;
+        
+        if (isInBackButton) {
+          // 隐藏成就界面
+          this.showingAchievements = false;
+          
+          // 调用成就系统的hideScreen方法
+          databus.achievementSystem.hideScreen();
+          
+          // 播放按钮音效
+          this.music.playShoot();
+          return;
+        }
+      }
+      
+      // 将触摸事件传递给成就系统
+      const handled = databus.achievementSystem.handleTouch(x, y, e.type)
+      
+      // 如果成就系统处理了触摸事件，则不再继续处理
+      if (handled) {
+        return
+      }
+      
+      // 如果在成就界面但没有点击任何按钮，则不再继续处理
+      return
+    }
 
-    if (x >= area.startX
-      && x <= area.endX
-      && y >= area.startY
-      && y <= area.endY)
-      this.restart()
+    // 游戏结束状态下的按钮处理
+    if (databus.gameOver) {
+      // 添加延迟检查，游戏结束后1秒内不响应按钮操作，防止误触
+      const currentTime = Date.now();
+      const timeSinceGameOver = currentTime - databus.gameOverTime;
+      
+      // 如果游戏结束后不到1秒，不响应任何按钮操作
+      if (timeSinceGameOver < 1000) {
+        return;
+      }
+      
+      let area = this.gameinfo.btnArea
+      
+      // 重新开始按钮
+      if (x >= area.startX
+        && x <= area.endX
+        && y >= area.startY
+        && y <= area.endY) {
+        this.restart()
+        
+        // 播放按钮音效
+        this.music.playShoot()
+        return
+      }
+      
+      // 检查是否点击了成就按钮
+      if (this.gameinfo.achievementBtnArea) {
+        const achieveArea = this.gameinfo.achievementBtnArea;
+        const isInAchieveArea = 
+          x >= achieveArea.startX && x <= achieveArea.endX && 
+          y >= achieveArea.startY && y <= achieveArea.endY;
+        
+        if (isInAchieveArea) {
+          // 显示成就界面
+          this.showingAchievements = true
+          
+          // 使用成就系统的showScreen方法
+          if (databus.achievementSystem) {
+            databus.achievementSystem.showScreen()
+          }
+          
+          // 播放按钮音效
+          this.music.playShoot()
+          return
+        }
+      }
+      
+      // 检查是否点击了复活按钮
+      if (Config.ads.enabled && this.gameinfo.reviveBtnArea) {
+        if (x >= this.gameinfo.reviveBtnArea.startX
+          && x <= this.gameinfo.reviveBtnArea.endX
+          && y >= this.gameinfo.reviveBtnArea.startY
+          && y <= this.gameinfo.reviveBtnArea.endY) {
+          
+          // 显示复活广告
+          this.showReviveAd()
+          return
+        }
+      }
+      
+      // 检查是否点击了特殊道具按钮
+      if (Config.ads.enabled && this.gameinfo.specialItemBtnArea) {
+        if (x >= this.gameinfo.specialItemBtnArea.startX
+          && x <= this.gameinfo.specialItemBtnArea.endX
+          && y >= this.gameinfo.specialItemBtnArea.startY
+          && y <= this.gameinfo.specialItemBtnArea.endY) {
+          
+          // 显示特殊道具广告
+          this.showSpecialItemAd()
+          return
+        }
+      }
+    } else {
+      // 游戏进行中的触摸处理
+      
+      // 检查是否点击了使用特殊道具按钮
+      if (databus.specialItem && this.gameinfo.useSpecialItemBtnArea) {
+        if (x >= this.gameinfo.useSpecialItemBtnArea.startX
+          && x <= this.gameinfo.useSpecialItemBtnArea.endX
+          && y >= this.gameinfo.useSpecialItemBtnArea.startY
+          && y <= this.gameinfo.useSpecialItemBtnArea.endY) {
+          
+          // 使用特殊道具
+          const result = databus.useSpecialItem()
+          
+          // 检查是否触发了千钧一发成就
+          if (result && result.narrowEscape) {
+            databus.recordNarrowEscape()
+          }
+          
+          return
+        }
+      }
+    }
   }
 
   /**
-   * canvas重绘函数
-   * 每一帧重新绘制所有的需要展示的元素
+   * 显示复活广告
    */
-  render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-    this.bg.render(ctx)
-
-    databus.bullets
-      .concat(databus.enemys)
-      .forEach((item) => {
-        item.drawToCanvas(ctx)
-      })
-
-    this.player.drawToCanvas(ctx)
-
-    databus.animations.forEach((ani) => {
-      if (ani.isPlaying) {
-        ani.aniRender(ctx)
+  showReviveAd() {
+    this.adManager.showReviveAd(
+      // 复活成功回调
+      () => {
+        databus.gameOver = false
+      },
+      // 复活失败回调
+      (err) => {
+        console.log('复活失败', err)
       }
-    })
-
-    this.gameinfo.renderGameScore(ctx, databus.score)
-
-    // 游戏结束停止帧循环
-    if (databus.gameOver) {
-      this.gameinfo.renderGameOver(ctx, databus.score)
-
-      if (!this.hasEventBind) {
-        this.hasEventBind = true
-        this.touchHandler = this.touchEventHandler.bind(this)
-        canvas.addEventListener('touchstart', this.touchHandler)
+    )
+  }
+  
+  /**
+   * 显示特殊道具广告
+   */
+  showSpecialItemAd() {
+    this.adManager.showSpecialItemAd(
+      // 成功回调
+      () => {
+        // 创建超级炸弹道具
+        const superBomb = new SuperBomb()
+        databus.setSpecialItem(superBomb)
+        
+        // 重新开始游戏
+        databus.gameOver = false
+      },
+      // 失败回调
+      (err) => {
+        console.log('获取特殊道具失败', err)
       }
-    }
+    )
   }
 
   // 游戏逻辑更新主函数
   update() {
     if (databus.gameOver)
-      return;
+      return
 
+    // 更新背景
     this.bg.update()
+    
+    // 更新玩家状态
+    this.player.update()
 
     databus.bullets
       .concat(databus.enemys)
+      .concat(databus.powerItems)
       .forEach((item) => {
         item.update()
       })
 
     this.enemyGenerate()
+    this.powerItemGenerate()
 
     this.collisionDetection()
 
@@ -174,5 +430,84 @@ export default class Main {
       this.bindLoop,
       canvas
     )
+  }
+
+  // 游戏画面渲染函数
+  render() {
+    // 完全清除画布，确保没有残留的边框或其他元素
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // 重置所有绘图状态
+    ctx.save()
+    
+    // 绘制背景
+    this.bg.render(ctx)
+
+    // 只在游戏未结束时渲染敌机、子弹和道具
+    if (!databus.gameOver) {
+      databus.bullets
+        .concat(databus.enemys)
+        .concat(databus.powerItems)
+        .forEach((item) => {
+          item.drawToCanvas(ctx)
+        })
+
+      this.player.drawToCanvas(ctx)
+      
+      // 渲染动画
+      databus.animations.forEach((ani) => {
+        if (ani.isPlaying) {
+          ani.aniRender(ctx)
+        }
+      })
+      
+      // 如果有特殊道具，渲染使用按钮
+      if (databus.specialItem) {
+        this.gameinfo.renderSpecialItemButton(ctx)
+      }
+    }
+
+    // 游戏结束停止帧循环
+    if (databus.gameOver) {
+      this.gameinfo.renderGameOver(
+        ctx, 
+        databus.score,
+        databus.highScore,
+        Config.ads.enabled ? Config.ads : null,
+        this.adManager
+      )
+
+      if (!this.hasEventBind) {
+        this.hasEventBind = true
+        this.touchHandler = this.touchEventHandler.bind(this)
+        canvas.addEventListener('touchstart', this.touchHandler)
+        canvas.addEventListener('touchmove', this.touchHandler)
+        canvas.addEventListener('touchend', this.touchHandler)
+      }
+    } else {
+      // 正常游戏中
+      // 绘制分数和最高分
+      this.gameinfo.renderGameScore(
+        ctx, 
+        databus.score,
+        databus.highScore,
+        Config.ads.enabled && databus.adRewardActive
+      )
+    }
+    
+    // 如果正在显示成就界面
+    if (this.showingAchievements && databus.achievementSystem) {
+      databus.achievementSystem.renderAchievementScreen(ctx)
+    }
+    
+    // 如果有成就通知需要显示
+    if (Config.achievements.enabled && 
+        Config.achievements.showNotifications && 
+        databus.achievementSystem) {
+      databus.achievementSystem.renderAchievementNotification(ctx)
+    }
+    
+    // 恢复绘图状态
+    ctx.restore()
   }
 }
