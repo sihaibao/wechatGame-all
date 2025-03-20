@@ -2,8 +2,8 @@ import Animation from '../base/animation'
 import DataBus   from '../databus'
 
 const ENEMY_IMG_SRC = 'images/enemy.png'
-const ENEMY_WIDTH   = 60
-const ENEMY_HEIGHT  = 60
+const ENEMY_WIDTH   = 72
+const ENEMY_HEIGHT  = 43
 
 const __ = {
   speed: Symbol('speed')
@@ -52,5 +52,42 @@ export default class Enemy extends Animation {
     // 对象回收
     if ( this.y > window.innerHeight + this.height )
       databus.removeEnemey(this)
+  }
+
+  /**
+   * 改进的碰撞检测方法
+   * 使用更精确的矩形碰撞检测
+   * @param {Sprite} sp: 精灵实例
+   */
+  isCollideWith(sp) {
+    // 如果正在播放爆炸动画，则不进行碰撞检测
+    if (this.isPlaying) {
+      return false
+    }
+
+    // 获取敌机的碰撞区域（缩小20%以提高游戏体验）
+    const enemyLeft = this.x + this.width * 0.1
+    const enemyRight = this.x + this.width * 0.9
+    const enemyTop = this.y + this.height * 0.1
+    const enemyBottom = this.y + this.height * 0.9
+
+    // 获取另一个精灵的碰撞区域
+    const spLeft = sp.x
+    const spRight = sp.x + sp.width
+    const spTop = sp.y
+    const spBottom = sp.y + sp.height
+
+    // 检查两个矩形是否重叠
+    if (!this.visible || !sp.visible) {
+      return false
+    }
+
+    // 矩形碰撞检测
+    return !(
+      enemyRight < spLeft ||
+      enemyLeft > spRight ||
+      enemyBottom < spTop ||
+      enemyTop > spBottom
+    )
   }
 }
