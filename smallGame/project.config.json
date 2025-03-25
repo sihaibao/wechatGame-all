@@ -10,7 +10,8 @@
       "ignore": [],
       "disablePlugins": [],
       "outputPath": ""
-    }
+    },
+    "uglifyFileName": true
   },
   "compileType": "game",
   "libVersion": "3.7.7",
@@ -18,7 +19,12 @@
   "projectname": "smallGame",
   "condition": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "value": "/projectmaps",
+        "type": "folder"
+      }
+    ],
     "include": []
   },
   "editorSetting": {
